@@ -1,24 +1,21 @@
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+android {
+    // your existing Android configuration
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 
-android {
-    namespace = "com.dataconnect.app"
-    compileSdk = 36
+tasks.withType<JavaCompile>().configureEach {
+    sourceCompatibility = JavaVersion.VERSION_17.toString()
+    targetCompatibility = JavaVersion.VERSION_17.toString()
+}
 
-    defaultConfig {
-        applicationId = "com.dataconnect.app"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 5
-        versionName = "0.5.0"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            isShrinkResources = false
-        }
-    }
+kotlin {
+    jvmToolchain(17)
 }
