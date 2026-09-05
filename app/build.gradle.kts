@@ -11,8 +11,8 @@ android {
         applicationId = "com.dataconnect.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 91
-        versionName = "0.9.1"
+        versionCode = 110
+        versionName = "1.1.0"
     }
 
     compileOptions {

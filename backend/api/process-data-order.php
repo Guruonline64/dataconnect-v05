@@ -34,5 +34,13 @@ if(($result['status']??'')==='not_configured' || ($result['status']??'')==='adap
   out(false,'Provider is not configured yet. The order remains pending.',['status'=>'pending'],503);
 }
 
-$pdo->prepare('UPDATE data_orders SET status="failed" WHERE id=?')->execute([$orderId]);
-out(false,'Provider failed to process the order',['status'=>'failed'],502);
+try {
+  $pdo->beginTransaction();
+  $ref='REFUND-'.$orderId.'-'.bin2hex(random_bytes(4));
+  $pdo->prepare('UPDATE wallets SET balance=balance+? WHERE user_id=?')->execute([$order['amount'],$u['id']]);
+  $pdo->prepare('INSERT INTO wallet_ledger(user_id,type,amount,reference,description) VALUES(?,?,?,?,?)')->execute([$u['id'],'refund',$order['amount'],$ref,'Automatic refund for failed data order #'.$orderId]);
+  $pdo->prepare('UPDATE data_orders SET status="refunded" WHERE id=?')->execute([$orderId]);
+  notify_user((int)$u['id'],'Data purchase refunded','The provider could not complete your data order. The amount has been returned to your wallet.');
+  $pdo->commit();
+} catch(Throwable $e) { if($pdo->inTransaction())$pdo->rollBack(); }
+out(false,'Provider failed; wallet refund was attempted',['status'=>'refunded'],502);

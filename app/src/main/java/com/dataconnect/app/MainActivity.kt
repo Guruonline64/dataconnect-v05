@@ -4,11 +4,13 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.Window
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : Activity() {
@@ -18,6 +20,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestWindowFeature(Window.FEATURE_NO_TITLE)
 
         webView = WebView(this)
         setContentView(webView)
@@ -32,11 +35,23 @@ class MainActivity : Activity() {
             allowFileAccess = false
             allowContentAccess = true
             mediaPlaybackRequiresUserGesture = true
+            builtInZoomControls = false
+            displayZoomControls = false
         }
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest) =
                 assetLoader.shouldInterceptRequest(request.url)
+
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: android.webkit.WebResourceError
+            ) {
+                if (request.isForMainFrame) {
+                    Toast.makeText(this@MainActivity, "Unable to load Data Connect", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         webView.webChromeClient = object : WebChromeClient() {
@@ -68,9 +83,7 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == fileChooserRequest) {
-            val result = if (resultCode == RESULT_OK && data?.data != null) {
-                arrayOf(data.data!!)
-            } else null
+            val result = if (resultCode == RESULT_OK && data?.data != null) arrayOf(data.data!!) else null
             filePathCallback?.onReceiveValue(result)
             filePathCallback = null
         }
@@ -79,5 +92,13 @@ class MainActivity : Activity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (webView.canGoBack()) webView.goBack() else super.onBackPressed()
+    }
+
+    override fun onDestroy() {
+        filePathCallback?.onReceiveValue(null)
+        filePathCallback = null
+        webView.stopLoading()
+        webView.destroy()
+        super.onDestroy()
     }
 }
