@@ -1,82 +1,90 @@
-# Data Connect V06.2
+# Data Connect — Laravel 13 Backend Migration
 
-This version is the app + backend-ready development package.
+This backend replaces the legacy PHP endpoint implementation while **leaving the Android/Web frontend untouched**.
 
-## Android
-The Android app is a WebView wrapper around the bundled Data Connect frontend.
+## Compatibility guarantee
 
-## Backend
-`backend/database/schema.sql` contains the MySQL schema for:
-- users/authentication
-- wallets and wallet ledger
-- data orders
-- airtime dispenser approvals
-- share packages/holdings
-- shareholder withdrawals
-- marketer profiles
-- notifications
-- staff messages
+The frontend files under `app/src/main/...` were not modified. The Laravel API intentionally supports the existing routes, including the `.php` suffix:
 
-Copy `backend/.env.example` to your server environment and fill in your own secrets there.
-Never put VTU credentials in the Android frontend.
+- `/api/login.php`
+- `/api/register.php`
+- `/api/me.php`
+- `/api/wallet.php`
+- `/api/transactions.php`
+- `/api/notifications.php`
+- `/api/dashboard.php`
+- `/api/data-plans.php`
+- `/api/purchase-data.php`
+- `/api/process-data-order.php`
+- `/api/refund-data.php`
+- `/api/airtime-requests.php`
+- `/api/request-airtime.php`
+- `/api/share-packages.php`
+- `/api/share-holdings.php`
+- `/api/share-returns.php`
+- `/api/buy-share.php`
+- `/api/withdrawals.php`
+- `/api/withdrawal-request.php`
+- `/api/marketer-apply.php`
+- staff/dispenser endpoints
+- `/api/post-daily-share-returns.php`
 
-## Next implementation stage
-1. Deploy PHP backend over HTTPS.
-2. Create MySQL database using schema.sql.
-3. Implement secure session/JWT authentication.
-4. Connect wallet ledger with database transactions.
-5. Connect VTU.ng server-side.
-6. Add dispenser/staff authorization and working-hours rules.
-7. Connect notifications and real withdrawal approvals.
+Bearer-token authentication is preserved at the HTTP contract level, so the existing frontend does not need a UI or API-client rewrite.
 
-## V07.3 API contract
+## Install
 
-The Android client expects these endpoints under the configured HTTPS API base URL:
+```bash
+cd backend
+composer install --no-dev --optimize-autoloader
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+```
 
-- `POST /api/register.php`
-- `POST /api/login.php`
-- `GET /api/me.php`
-- `GET /api/wallet.php`
-- `GET /api/transactions.php`
-- `GET /api/notifications.php`
-- `GET /api/health.php`
+Configure MySQL and the provider values in `.env`, then serve the `backend/public` directory.
 
-Until the company supplies hosting, the Android app remains usable in demo mode. Configure the production API URL only after the PHP/MySQL server is deployed over HTTPS.
+For Apache/Nginx, the document root should be:
 
-## V07.4 workflow endpoints to implement
+```text
+DataConnect_V07_2_AndroidStudio/backend/public
+```
 
-- `GET /api/staff/airtime-requests.php`
-- `POST /api/staff/airtime-approve.php`
-- `POST /api/staff/airtime-reject.php`
-- `GET /api/marketer.php`
-- `POST /api/marketer/apply.php`
-- `POST /api/withdrawals.php`
+Do not expose `storage`, `.env`, or the project root directly.
 
-Staff endpoints must enforce role permissions server-side; the Android UI is never a security boundary.
+## Daily returns
 
-## V08 implemented API
+Run the scheduler:
 
-The following endpoints are now implemented as a development baseline:
+```bash
+php artisan schedule:work
+```
 
-- `POST /api/register.php`
-- `POST /api/login.php`
-- `GET /api/me.php`
-- `GET /api/wallet.php`
-- `GET /api/transactions.php`
-- `GET /api/notifications.php`
-- `GET /api/health.php`
+Production schedulers can invoke:
 
-### Production note
-The token implementation here is a development placeholder. Before production deployment, replace it with a robust signed token/session system, strict CORS, HTTPS-only transport, rate limiting, CSRF protection where applicable, audit logging, and server-side role/permission checks.
+```bash
+php artisan schedule:run
+```
 
-## V08.1 data transaction engine
+The scheduled job posts at 00:05 server time.
 
-Implemented:
-- HMAC-signed development authentication tokens
-- Atomic wallet balance locking/debit
-- Wallet ledger entry for data purchases
-- Data order creation
-- Failed-order refund endpoint
-- Transaction rollback on errors
+## VTU provider
 
-The actual VTU.ng provider call is intentionally separate and will be added only after the company supplies the production server environment.
+The old implementation deliberately did not guess the production VTU.ng API contract. The Laravel adapter therefore requires:
+
+```text
+VTU_BASE_URL=
+VTU_TOKEN=
+VTU_DATA_PATH=
+```
+
+Only put provider credentials on the server.
+
+## Legacy implementation
+
+The original PHP backend has been retained in:
+
+```text
+backend_php_legacy/
+```
+
+It is not used by the Laravel application.
