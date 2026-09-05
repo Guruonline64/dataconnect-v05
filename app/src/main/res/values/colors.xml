@@ -1,4 +1,5 @@
 <resources>
+    <color name="data_connect_blue">#1565C0</color>
     <color name="dc_blue">#1565C0</color>
     <color name="dc_blue_dark">#0D47A1</color>
     <color name="dc_white">#FFFFFF</color>
