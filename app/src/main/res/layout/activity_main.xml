@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/dc_bg">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="20dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/app_name" android:textColor="@color/dc_blue_dark"
+            android:textSize="28sp" android:textStyle="bold"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/app_slogan" android:textColor="@color/dc_text"
+            android:textSize="14sp" android:layout_marginBottom="18dp"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="@color/dc_white" android:padding="18dp">
+            <TextView android:id="@+id/walletBalance" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Wallet balance: ₦0.00" android:textSize="20sp" android:textStyle="bold"
+                android:textColor="@color/dc_text"/>
+            <TextView android:id="@+id/shareCount" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Active shares: 0" android:textColor="@color/dc_text" android:layout_marginTop="8dp"/>
+            <TextView android:id="@+id/notificationCount" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Unread notifications: 0" android:textColor="@color/dc_text" android:layout_marginTop="4dp"/>
+        </LinearLayout>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Services" android:textSize="19sp" android:textStyle="bold"
+            android:textColor="@color/dc_text" android:layout_marginTop="22dp" android:layout_marginBottom="8dp"/>
+
+        <Button android:id="@+id/dataCenterButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Data Center"/>
+        <Button android:id="@+id/airtimeButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Airtime"/>
+        <Button android:id="@+id/walletButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Wallet"/>
+        <Button android:id="@+id/sharesButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Shares"/>
+        <Button android:id="@+id/withdrawalButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Withdrawal"/>
+        <Button android:id="@+id/accountButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Account"/>
+        <Button android:id="@+id/customerCareButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Customer Care"/>
+    </LinearLayout>
+</ScrollView>

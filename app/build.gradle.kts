@@ -1,5 +1,19 @@
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
+
 android {
-    // your existing Android configuration
+    namespace = "com.dataconnect.app"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.dataconnect.app"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 91
+        versionName = "0.9.1"
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -9,7 +23,15 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+    }
 }
+
 
 tasks.withType<JavaCompile>().configureEach {
     sourceCompatibility = JavaVersion.VERSION_17.toString()
@@ -18,4 +40,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 kotlin {
     jvmToolchain(17)
+}
+
+dependencies {
+    implementation("androidx.webkit:webkit:1.14.0")
 }

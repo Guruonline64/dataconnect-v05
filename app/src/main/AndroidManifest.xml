@@ -13,5 +13,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
+        <activity android:name=".app.DataConnectV089Activity" />
+    <activity android:name=".app.DataConnectV090CoreActivity" />
+</application>
 </manifest>

@@ -1,3 +1,7 @@
 <resources>
-    <color name="data_connect_blue">#075BEA</color>
+    <color name="dc_blue">#1565C0</color>
+    <color name="dc_blue_dark">#0D47A1</color>
+    <color name="dc_white">#FFFFFF</color>
+    <color name="dc_bg">#F5F8FC</color>
+    <color name="dc_text">#17202A</color>
 </resources>

@@ -1,80 +1,83 @@
 package com.dataconnect.app
 
-import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import java.io.IOException
+import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private val fileChooserRequest = 1001
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         webView = WebView(this)
         setContentView(webView)
 
+        val assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
-            allowFileAccess = true
+            allowFileAccess = false
             allowContentAccess = true
-            javaScriptCanOpenWindowsAutomatically = false
-            mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            mediaPlaybackRequiresUserGesture = true
         }
 
         webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = false
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest) =
+                assetLoader.shouldInterceptRequest(request.url)
+        }
 
-            override fun onReceivedError(
-                view: WebView,
-                request: WebResourceRequest,
-                error: WebResourceError
-            ) {
-                super.onReceivedError(view, request, error)
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                this@MainActivity.filePathCallback?.onReceiveValue(null)
+                this@MainActivity.filePathCallback = filePathCallback
+                return try {
+                    val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                        type = "image/*"
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                    }
+                    startActivityForResult(intent, fileChooserRequest)
+                    true
+                } catch (_: Exception) {
+                    this@MainActivity.filePathCallback = null
+                    false
+                }
             }
         }
-        webView.webChromeClient = WebChromeClient()
 
-        loadApp()
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
 
-    private fun loadApp() {
-        try {
-            val html = assets.open("index.html").bufferedReader(Charsets.UTF_8).use { it.readText() }
-            // Use the asset directory as the document base URL so relative css/js/manifest
-            // references resolve correctly inside Android WebView.
-            webView.loadDataWithBaseURL(
-                "file:///android_asset/",
-                html,
-                "text/html",
-                "UTF-8",
-                null
-            )
-        } catch (_: IOException) {
-            webView.loadData(
-                "<html><body style=\"font-family:sans-serif;padding:24px\"><h2>Data Connect</h2><p>Unable to load the app assets.</p></body></html>",
-                "text/html",
-                "UTF-8"
-            )
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == fileChooserRequest) {
+            val result = if (resultCode == RESULT_OK && data?.data != null) {
+                arrayOf(data.data!!)
+            } else null
+            filePathCallback?.onReceiveValue(result)
+            filePathCallback = null
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (webView.canGoBack()) webView.goBack() else super.onBackPressed()
-    }
-
-    override fun onDestroy() {
-        webView.stopLoading()
-        webView.destroy()
-        super.onDestroy()
     }
 }
