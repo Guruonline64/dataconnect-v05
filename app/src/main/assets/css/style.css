@@ -96,3 +96,25 @@ body.dark .dc-loader-title{color:#f4f7fb}
 body.dark .dc-loader-message{color:#9eabc0}
 body.dark .dc-loader-bar{background:#1b2b47}
 @media(prefers-reduced-motion:reduce){.dc-loader-logo,.dc-loader-spinner,.dc-loader-bar span{animation:none}.dc-loader-spinner{border-top-color:#075bea}}
+
+/* DataConnect V14.2.9 UI polish */
+.auth { transition: background .2s ease, color .2s ease; }
+body.dark .auth,.dark .auth {background:linear-gradient(150deg,#0b1220,#111a2b);color:#f5f7fb}
+body.dark .auth h2,.dark .auth h2 {color:#f8fafc}
+body.dark .auth>p,.dark .auth>p,body.dark .auth small,.dark .auth small {color:#aab4c5}
+body.dark .auth label,.dark .auth label {color:#dbe3ef}
+body.dark .auth input,.dark .auth input {background:#182235;color:#f8fafc;border:1px solid #33445f}
+body.dark .auth input::placeholder,.dark .auth input::placeholder {color:#7f8da3}
+body.dark .auth a,.dark .auth a {color:#75aaff}
+.terms-row{display:flex;align-items:flex-start;gap:10px;margin:14px 0;text-align:left}
+.terms-row input[type=checkbox]{width:18px;height:18px;flex:0 0 auto;margin-top:2px;accent-color:#075bea}
+.terms-row label{font-size:12px;line-height:1.45;color:#52657c}
+.terms-row a{color:#075bea;text-decoration:none;font-weight:700}
+body.dark .terms-row label,.dark .terms-row label{color:#c3cedd}
+body.dark .terms-row a,.dark .terms-row a{color:#75aaff}
+.withdraw-amount-menu{border-radius:14px;overflow:hidden;box-shadow:0 14px 35px rgba(10,30,70,.16)}
+.withdraw-amount-option{padding:13px 15px;font-size:13px;font-weight:600}
+.withdraw-amount-option.selected{background:#edf5ff;color:#075bea}
+body.dark .withdraw-amount-menu,.dark .withdraw-amount-menu{background:#182235;border-color:#33445f}
+body.dark .withdraw-amount-option,.dark .withdraw-amount-option{color:#f3f6fb}
+body.dark .withdraw-amount-option.selected,.dark .withdraw-amount-option.selected{background:#22314a;color:#75aaff}
