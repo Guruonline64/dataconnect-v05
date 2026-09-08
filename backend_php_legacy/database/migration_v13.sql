@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS data_plans (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  network VARCHAR(30) NOT NULL,
+  plan_name VARCHAR(80) NOT NULL,
+  amount DECIMAL(14,2) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_network_plan (network, plan_name)
+);
