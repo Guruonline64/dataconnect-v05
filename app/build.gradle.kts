@@ -11,8 +11,8 @@ android {
         applicationId = "com.dataconnect.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 121
-        versionName = "12.1.0"
+        versionCode = 1420
+        versionName = "14.2"
     }
 
     compileOptions {
@@ -44,4 +44,5 @@ kotlin {
 
 dependencies {
     implementation("androidx.webkit:webkit:1.14.0")
+    implementation("androidx.biometric:biometric:1.1.0")
 }

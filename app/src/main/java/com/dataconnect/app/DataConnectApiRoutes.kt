@@ -1,22 +1,27 @@
 package com.dataconnect.app
 
-/**
- * V08.5 customer/staff API route registry.
- * Keep the base URL configurable for development vs company production hosting.
- */
+/** Backend V2.0.5 API route registry. */
 object DataConnectApiRoutes {
-    const val DASHBOARD = "/api/dashboard.php"
-    const val DATA_PLANS = "/api/data-plans.php"
-    const val PURCHASE_DATA = "/api/purchase-data.php"
-    const val AIRTIME_REQUESTS = "/api/airtime-requests.php"
-    const val REQUEST_AIRTIME = "/api/request-airtime.php"
-    const val WALLET = "/api/wallet.php"
-    const val TRANSACTIONS = "/api/transactions.php"
-    const val NOTIFICATIONS = "/api/notifications.php"
-    const val SHARES = "/api/share-packages.php"
-    const val HOLDINGS = "/api/share-holdings.php"
-    const val SHARE_RETURNS = "/api/share-returns.php"
-    const val WITHDRAWALS = "/api/withdrawals.php"
-    const val WITHDRAWAL_REQUEST = "/api/withdrawal-request.php"
-    const val STAFF_DASHBOARD = "/api/staff-dashboard.php"
+    const val HEALTH = "/api/health"
+    const val REGISTER = "/api/v2/auth/register"
+    const val LOGIN = "/api/v2/auth/login"
+    const val LOGOUT = "/api/v2/auth/logout"
+    const val PROFILE = "/api/v2/account/profile"
+    const val SETTINGS = "/api/v2/account/settings"
+    const val WALLET = "/api/v2/wallet"
+    const val TRANSACTIONS = "/api/v2/wallet/transactions"
+    const val DATA_PLANS = "/api/v2/data/plans"
+    const val PURCHASE_DATA = "/api/v2/data/purchase"
+    const val AIRTIME_PURCHASE = "/api/v2/airtime/purchase"
+    const val ORDERS = "/api/v2/orders"
+    const val SHARES = "/api/v2/shares"
+    const val BUY_SHARE = "/api/v2/shares/purchase"
+    const val HOLDINGS = "/api/v2/shares/portfolio"
+    const val WITHDRAWALS = "/api/v2/withdrawals"
+    const val NOTIFICATIONS = "/api/v2/notifications"
+    const val APP_VERSION = "/api/v2/app/version"
+    const val ADMIN_USERS = "/api/v2/admin/users"
+    const val ADMIN_TRANSACTIONS = "/api/v2/admin/transactions"
+    const val ADMIN_WITHDRAWALS = "/api/v2/admin/withdrawals"
+    const val ADMIN_SETTINGS = "/api/v2/admin/settings"
 }

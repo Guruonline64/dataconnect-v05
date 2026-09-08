@@ -20,3 +20,10 @@ foreach ($endpoints as $endpoint) {
     Route::match(['GET','POST','OPTIONS'], "/{$endpoint}", [ApiController::class, 'dispatch'])
         ->defaults('endpoint', $endpoint);
 }
+
+
+// Data Connect V13.6.1 password reset endpoints.
+// Production implementation must send the reset code through a verified provider
+// and must never return the code in the API response.
+Route::post('/auth/forgot-password', [PasswordResetController::class, 'forgot']);
+Route::post('/auth/reset-password', [PasswordResetController::class, 'reset']);

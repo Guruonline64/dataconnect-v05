@@ -1,7 +1,7 @@
 const app=document.getElementById('app');
 const saved=JSON.parse(localStorage.getItem('dc_v07_state')||'null');
-const state=Object.assign({page:'login',network:'MTN',plan:null,phone:'',balance:25450,user:'',role:'Customer',loggedIn:false,notifications:3,shareholder:false,marketerApproved:false,staffOnline:true,airtimeRequests:[],orders:[]},saved||{});
-function save(){localStorage.setItem('dc_v07_state',JSON.stringify(state))} function togglePassword(){const input=document.getElementById('loginPassword');const btn=document.getElementById('togglePasswordBtn');if(!input||!btn)return;const showing=input.type==='text';input.type=showing?'password':'text';btn.textContent=showing?'Show':'Hide';btn.setAttribute('aria-label',showing?'Show password':'Hide password')}
+const state=Object.assign({page:'login',network:'MTN',plan:null,phone:'',balance:25450,balanceVisible:true,user:'',role:'Customer',loggedIn:false,notifications:3,shareholder:false,marketerApproved:false,staffOnline:true,airtimeRequests:[],orders:[]},saved||{});
+function save(){localStorage.setItem('dc_v07_state',JSON.stringify(state))} function toggleBalance(){state.balanceVisible=!state.balanceVisible;save();go('home')} function balanceDisplay(){return state.balanceVisible?money(state.balance):'₦ ••••••••'} function togglePassword(){const input=document.getElementById('loginPassword');const btn=document.getElementById('togglePasswordBtn');if(!input||!btn)return;const showing=input.type==='text';input.type=showing?'password':'text';btn.textContent=showing?'Show':'Hide';btn.setAttribute('aria-label',showing?'Show password':'Hide password')}
 const networks=['MTN','Airtel','Glo','9mobile'];
 const dataPlans={MTN:[['500MB','₦700','7 days'],['1GB','₦1,350','30 days'],['2GB','₦2,700','30 days'],['3GB','₦4,050','30 days'],['5GB','₦6,750','30 days']],Airtel:[['500MB','₦700','7 days'],['1GB','₦1,350','30 days'],['2GB','₦2,700','30 days'],['3GB','₦4,050','30 days'],['5GB','₦6,750','30 days']],Glo:[['500MB','₦650','7 days'],['1GB','₦1,300','30 days'],['2GB','₦2,600','30 days'],['3GB','₦3,900','30 days'],['5GB','₦6,500','30 days']],['9mobile']:[['500MB','₦700','7 days'],['1GB','₦1,300','30 days'],['2GB','₦2,600','30 days'],['3GB','₦3,900','30 days'],['5GB','₦6,500','30 days']]};
 const sharePackages=[['₦10,000','₦250/day','90 days'],['₦20,000','₦500/day','90 days'],['₦30,000','₦750/day','90 days'],['₦40,000','₦1,000/day','90 days'],['₦50,000','₦1,500/day','90 days'],['₦60,000','₦1,800/day','92 days']];
@@ -9,10 +9,17 @@ function backendStatus(){return `<div class="card" style="margin-top:12px"><b>Ba
 function money(n){return '₦'+Number(n).toLocaleString('en-NG',{minimumFractionDigits:2})}
 function toast(t){const x=document.createElement('div');x.className='toast';x.textContent=t;document.body.appendChild(x);requestAnimationFrame(()=>x.classList.add('show'));setTimeout(()=>{x.classList.remove('show');setTimeout(()=>x.remove(),250)},2200)}
 function logo(){return `<div class="logo">DC</div>`}
+function profileInitials(){const n=String(state.user||'Data Connect User').trim();return n.split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'DC'}
+function profilePictureButton(){return `<button class="profile-picture-btn" onclick="go('account')" aria-label="Open profile" title="Profile">${state.profilePicture?`<img src="${esc(state.profilePicture)}" alt="Profile picture">`:`<span>${esc(profileInitials())}</span>`}</button>`}
 function header(title,sub=''){return `<div class="back"><button onclick="go('home')">←</button><div><b>${title}</b>${sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${sub}</div>`:''}</div></div>`}
 function bottom(active='home'){return `<div class="bottom"><button class="nav ${active==='home'?'active':''}" onclick="go('home')"><i>⌂</i>Home</button><button class="nav ${active==='data'?'active':''}" onclick="go('data')"><i>◉</i>Data</button><button class="nav ${active==='airtime'?'active':''}" onclick="go('airtime')"><i>▣</i>Airtime</button><button class="nav ${active==='wallet'?'active':''}" onclick="go('wallet')"><i>▱</i>Wallet</button><button class="nav ${active==='account'?'active':''}" onclick="go('account')"><i>●</i>Account</button></div>`}
 function go(p){state.page=p;save();render()}
-function auth(){const signup=state.page==='signup';app.innerHTML=`<main class="shell"><section class="auth"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><div class="authbox"><h1>${signup?'Create account':'Welcome back'}</h1><p>${signup?'Register with your phone number and username.':'Sign in securely to your Data Connect account.'}</p><div class="form">${signup?`<label class="label">Username</label><input id="username" class="input" placeholder="Enter username">`:''}<label class="label">Phone number</label><input id="loginPhone" class="input" inputmode="numeric" placeholder="08012345678"><label class="label" style="margin-top:14px">Password</label><div style="position:relative"><input id="loginPassword" class="input" type="password" placeholder="Enter password" style="padding-right:72px"><button type="button" id="togglePasswordBtn" onclick="togglePassword()" aria-label="Show password" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:12px;font-weight:700;padding:8px;color:var(--blue)">Show</button></div><button class="primary full" onclick="doLogin(${signup})">${signup?'Create Account':'Login'}</button></div><div class="switch">${signup?'Already have an account?':'New to Data Connect?'} <b onclick="go('${signup?'login':'signup'}')">${signup?'Login':'Create account'}</b></div></div></section></main>`}
+function biometricAvailable(){try{return typeof AndroidBiometric!=='undefined'&&AndroidBiometric.isAvailable()}catch(e){return false}}
+function biometricEnabled(){try{return biometricAvailable()&&AndroidBiometric.isEnabled()}catch(e){return false}}
+function enableBiometricAfterLogin(token){try{if(token&&biometricAvailable()&&!biometricEnabled()){window.onNativeBiometricEnabled=function(ok){if(ok)toast('Fingerprint login enabled');};AndroidBiometric.enable(token)}}catch(e){}}
+function biometricLogin(){try{if(!biometricEnabled())return toast('Log in with your password first to enable fingerprint login');window.onNativeBiometricResult=function(ok,token){if(!ok||!token)return toast('Fingerprint authentication cancelled or failed');DC_API.token=token;localStorage.setItem('dc_auth_token',token);state.loggedIn=true;save();toast('Fingerprint login successful');refreshBackendData().finally(()=>go('home'))};AndroidBiometric.authenticate()}catch(e){toast('Fingerprint login is not available on this device')}}
+
+function auth(){const signup=state.page==='signup';app.innerHTML=`<main class="shell"><section class="auth"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><div class="authbox"><h1>${signup?'Create account':'Welcome back'}</h1><p>${signup?'Register with your phone number and username.':'Sign in securely to your Data Connect account.'}</p><div class="form">${signup?`<label class="label">Username</label><input id="username" class="input" placeholder="Enter username">`:''}<label class="label">Phone number</label><input id="loginPhone" class="input" inputmode="numeric" placeholder="08012345678"><label class="label" style="margin-top:14px">Password</label><div style="position:relative"><input id="loginPassword" class="input" type="password" placeholder="Enter password" style="padding-right:72px"><button type="button" id="togglePasswordBtn" onclick="togglePassword()" aria-label="Show password" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:12px;font-weight:700;padding:8px;color:var(--blue)">Show</button></div><button class="primary full" onclick="doLogin(${signup})">${signup?'Create Account':'Login'}</button>${!signup&&biometricEnabled()?`<button type="button" class="ghost full biometric-login" onclick="biometricLogin()">◉  Login with fingerprint</button>`:''}</div><div class="switch">${signup?'Already have an account?':'New to Data Connect?'} <b onclick="go('${signup?'login':'signup'}')">${signup?'Login':'Create account'}</b></div></div></section></main>`}
 async function submitDataPurchase(){
   const p=dataPlans[state.network][state.plan??1];
   if(!state.phone || state.phone.length<10) return toast('Enter a valid recipient number');
@@ -26,7 +33,7 @@ async function submitDataPurchase(){
     }
     go('pending');
     setTimeout(()=>go('success'),1200);
-  } catch(e){ toast(e.message||'Unable to create data order'); go('summary'); }
+  } catch(e){ errorState(e.message||'Unable to create data order. Please try again.'); }
 }
 async function doLogin(signup){
   const phone=document.getElementById('loginPhone').value.trim();
@@ -42,6 +49,7 @@ async function doLogin(signup){
       state.phone=result.user?.phone||phone;
       state.role=result.user?.role||'customer';
       state.loggedIn=true;
+      enableBiometricAfterLogin(result.token||DC_API.token||'');
       save();
       toast(signup?'Account created successfully':'Login successful');
       await refreshBackendData();
@@ -59,7 +67,7 @@ async function doLogin(signup){
       toast('Demo login successful');
     }
     state.loggedIn=true; save(); go('home');
-  }catch(e){toast(e.message||'Unable to connect to the backend')}
+  }catch(e){errorState(e.message||'Unable to connect to the Data Connect service.');}
 }
 async function refreshBackendData(){
   if(!DC_API.base()||!(localStorage.getItem('dc_auth_token')||localStorage.getItem('data_connect_token')))return;
@@ -78,24 +86,96 @@ function canSeeMarketer(){return hasRole('marketer')}
 function canSeeStaff(){return hasRole('staff','sic','staff/sic')}
 function canSeeDispenser(){return hasRole('dispenser','data dispenser')}
 function privilegedServices(){let x='';if(canSeeMarketer())x+=`<button class="service" onclick="go('marketer')"><span>🪪</span><b>Marketer</b></button>`;if(canSeeStaff())x+=`<button class="service" onclick="go('staff')"><span>🛡️</span><b>SIC / Staff</b></button>`;if(canSeeDispenser())x+=`<button class="service" onclick="go('dispenser')"><span>🧾</span><b>Dispenser</b></button>`;return x}
-function home(){app.innerHTML=`<main class="shell"><section class="screen"><div class="top"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><button class="iconbtn" onclick="go('notifications')">🔔 <sup>${state.notifications}</sup></button></div><div class="hero"><div class="eyebrow">Available Balance</div><div class="balance">${money(state.balance)}</div><div class="hero-actions"><button class="whitebtn" onclick="toast('Wallet funding flow ready')">＋ Add Money</button><button class="whitebtn" onclick="go('withdraw')">↗ Withdraw</button></div></div><div class="section"><div class="sectionhead"><h2>Quick Services</h2><a onclick="go('transactions')">History</a></div><div class="grid"><button class="service" onclick="go('data')"><span>📡</span><b>Data Center</b></button><button class="service" onclick="go('airtime')"><span>📱</span><b>Airtime</b></button><button class="service" onclick="go('wallet')"><span>👛</span><b>Wallet</b></button><button class="service" onclick="go('shares')"><span>📈</span><b>Shares</b></button><button class="service" onclick="go('withdraw')"><span>💸</span><b>Withdrawal</b></button>${privilegedServices()}<button class="service" onclick="go('support')"><span>🎧</span><b>Customer Care</b></button></div></div><div class="section"><div class="sectionhead"><h2>Company Services</h2><a onclick="go('about')">View</a></div><div class="notice">Data Connect combines data, airtime, wallet, shareholder and marketer services in one mobile experience.</div></div><div class="section"><div class="sectionhead"><h2>Company Status</h2><a onclick="go('about')">Details</a></div><div class="notice"><b>V12 Progress:</b> Customer services, shareholder packages, Section B marketer profile, dispenser workflow, SIC staff chat and customer care are included in this demo. Live wallet ledger, transaction integrity and provider refund handling are now wired in V12.</div></div><div class="section"><div class="sectionhead"><h2>Recent Transactions</h2><a onclick="go('transactions')">See all</a></div><div class="list"><div class="row"><div class="ico">📡</div><div class="rowmain"><b>Data Purchase</b><small>MTN · 1GB · Today</small></div><div class="amount negative">−₦1,350</div></div><div class="row"><div class="ico">💰</div><div class="rowmain"><b>Wallet Funding</b><small>Bank transfer · Yesterday</small></div><div class="amount positive">+₦5,000</div></div></div></div></section>${bottom('home')}</main>`}
+function home(){app.innerHTML=`<main class="shell"><section class="screen"><div class="top"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><div class="top-actions"><button class="iconbtn" onclick="go('notifications')" aria-label="Notifications">🔔 <sup>${state.notifications}</sup></button>${profilePictureButton()}</div></div><div class="hero"><div class="balance-head"><div class="eyebrow">Available Balance</div></div><div class="balance-row"><div class="balance">${balanceDisplay()}</div><button class="balance-eye" onclick="toggleBalance()" aria-label="${state.balanceVisible?'Hide balance':'Show balance'}" title="${state.balanceVisible?'Hide balance':'Show balance'}">${state.balanceVisible?'◉':'○'}</button></div><div class="hero-actions"><button class="whitebtn" onclick="toast('Wallet funding flow ready')">＋ Add Money</button><button class="whitebtn" onclick="go('withdraw')">↗ Withdraw</button></div></div><div class="section"><div class="sectionhead"><h2>Quick Services</h2><a onclick="go('transactions')">History</a></div><div class="grid"><button class="service" onclick="go('data')"><span>📡</span><b>Data Center</b></button><button class="service" onclick="go('airtime')"><span>📱</span><b>Airtime</b></button><button class="service" onclick="go('wallet')"><span>👛</span><b>Wallet</b></button><button class="service" onclick="go('shares')"><span>📈</span><b>Shares</b></button><button class="service" onclick="go('withdraw')"><span>💸</span><b>Withdrawal</b></button>${privilegedServices()}<button class="service" onclick="go('support')"><span>🎧</span><b>Customer Care</b></button></div></div><div class="section"><div class="sectionhead"><h2>Company Services</h2><a onclick="go('about')">View</a></div><div class="notice">Data Connect combines data, airtime, wallet, shareholder and marketer services in one mobile experience.</div></div><div class="section"><div class="sectionhead"><h2>Company Status</h2><a onclick="go('about')">Details</a></div><div class="notice"><b>V12 Progress:</b> Customer services, shareholder packages, Section B marketer profile, dispenser workflow, SIC staff chat and customer care are included in this demo. Live wallet ledger, transaction integrity and provider refund handling are now wired in V12.</div></div><div class="section"><div class="sectionhead"><h2>Recent Transactions</h2><a onclick="go('transactions')">See all</a></div><div class="list"><div class="row"><div class="ico">📡</div><div class="rowmain"><b>Data Purchase</b><small>MTN · 1GB · Today</small></div><div class="amount negative">−₦1,350</div></div><div class="row"><div class="ico">💰</div><div class="rowmain"><b>Wallet Funding</b><small>Bank transfer · Yesterday</small></div><div class="amount positive">+₦5,000</div></div></div></div></section>${bottom('home')}</main>`}
 function data(){app.innerHTML=`<main class="shell"><section class="screen">${header('Data Center','Smart way to buy data')}<div class="hero"><div class="eyebrow">Wallet balance</div><div class="balance">${money(state.balance)}</div><div class="eyebrow">Choose a network</div></div><div class="cards">${networks.map((n,i)=>`<button class="option" onclick="state.network='${n}';go('plans')"><div class="bigico">${['🟡','🔴','🟢','🔵'][i]}</div><div><strong>${n}</strong><small>View available plans</small></div><div class="price">›</div></button>`).join('')}</div></section>${bottom('data')}</main>`}
 function planSelection(){app.innerHTML=`<main class="shell"><section class="screen">${header(state.network+' Data','Choose a plan')}<div class="pillbar"><span class="pill active">All Plans</span><span class="pill">Daily</span><span class="pill">Weekly</span><span class="pill">Monthly</span></div><div class="cards">${dataPlans[state.network].map((p,i)=>`<button class="option" onclick="state.plan=${i};go('recipient')"><div class="bigico">📦</div><div><strong>${p[0]}</strong><small>${p[2]} validity</small></div><div class="price">${p[1]}</div></button>`).join('')}</div></section></main>`}
 function recipient(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Recipient Number','Who should receive the data?')}<div class="form"><label class="label">Phone number</label><input id="phone" class="input" inputmode="numeric" maxlength="11" placeholder="08012345678" value="${state.phone}"><small class="sub">${state.network} · ${p[0]} · ${p[2]}</small><button class="primary full" onclick="state.phone=document.getElementById('phone').value;if(state.phone.length<10)return toast('Enter a valid phone number');go('summary')">Continue</button></div></section></main>`}
 function summary(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Order Summary','Review before purchase')}<div class="summary"><div class="sumrow"><span>Network</span><b>${state.network}</b></div><div class="sumrow"><span>Data plan</span><b>${p[0]}</b></div><div class="sumrow"><span>Recipient</span><b>${state.phone}</b></div><div class="sumrow"><span>Validity</span><b>${p[2]}</b></div><div class="sumrow"><span>Wallet balance</span><b>${money(state.balance)}</b></div><div class="sumrow total"><span>Total</span><b>${p[1]}</b></div></div><button class="primary full" onclick="go('confirm')">Continue to Confirm</button><button class="ghost full" onclick="go('recipient')">Edit</button></section></main>`}
 function confirm(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Confirm Purchase','Secure transaction')}<div class="state"><div class="stateico">🔐</div><h2>Confirm purchase?</h2><p class="sub">${p[0]} ${state.network} data for <b>${state.phone}</b> at <b>${p[1]}</b>.</p><button class="primary full" onclick="submitDataPurchase()">Confirm Purchase</button><button class="ghost full" onclick="go('summary')">Cancel</button></div></section></main>`}
 function pending(){app.innerHTML=`<main class="shell"><section class="screen"><div class="state"><div class="stateico pulse">📡</div><h2>Processing purchase</h2><p class="sub">Connecting to the Data Center service…</p><div class="summary"><div class="sumrow"><span>Reference</span><b>DC-${Date.now().toString().slice(-8)}</b></div><div class="sumrow"><span>Status</span><b>Processing</b></div></div></div></section></main>`}
-function success(){const p=dataPlans[state.network][state.plan??1];const o=state.lastOrder||{};app.innerHTML=`<main class="shell"><section class="screen"><div class="state"><div class="stateico">✓</div><h2>Purchase Submitted</h2><p class="sub">${o.message||'The request has been recorded. The provider will determine final delivery status.'}</p><div class="summary"><div class="sumrow"><span>Amount</span><b>${p[1]}</b></div><div class="sumrow"><span>Network</span><b>${state.network}</b></div><div class="sumrow"><span>Recipient</span><b>${state.phone}</b></div><div class="sumrow"><span>Reference</span><b>${o.reference||('DC-'+Date.now().toString().slice(-8))}</b></div><div class="sumrow"><span>Status</span><b class="positive">${o.status||'Submitted'}</b></div></div><button class="primary full" onclick="go('notifications')">View Notification</button><button class="ghost full" onclick="go('home')">Done</button></div></section></main>`}
-function airtime(){app.innerHTML=`<main class="shell"><section class="screen">${header('Airtime','Manual approval workflow')}<div class="notice"><b>Dispenser approval:</b> Every airtime sale is submitted for manual review before the client is credited.</div><div class="form"><label class="label">Network</label><select id="airNetwork" class="input"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select><label class="label" style="margin-top:14px">Recipient phone number</label><input id="airPhone" class="input" inputmode="numeric" placeholder="08012345678"><label class="label" style="margin-top:14px">Amount</label><select id="airAmount" class="input"><option>₦500</option><option>₦1,000</option><option>₦2,000</option><option>₦5,000</option><option>₦10,000</option></select><button class="primary full" onclick="submitAirtime()">Submit for Approval</button></div></section>${bottom('airtime')}</main>`}
-function submitAirtime(){const phone=document.getElementById('airPhone').value.trim();if(phone.length<10)return toast('Enter a valid phone number');state.airtimeRequests.push({network:document.getElementById('airNetwork').value,phone,amount:document.getElementById('airAmount').value,status:'Pending'});save();toast('Sent to dispenser');go('airtimePending')}
+function success(){const p=dataPlans[state.network][state.plan??1];const o=state.lastOrder||{};app.innerHTML=`<main class="shell"><section class="screen"><div class="state"><div class="stateico">✓</div><h2>Transaction Successful</h2><p class="sub">${o.message||'Your transaction has been recorded successfully. Delivery status is shown below.'}</p><div class="summary"><div class="sumrow"><span>Amount</span><b>${p[1]}</b></div><div class="sumrow"><span>Network</span><b>${state.network}</b></div><div class="sumrow"><span>Recipient</span><b>${state.phone}</b></div><div class="sumrow"><span>Reference</span><b>${o.reference||('DC-'+Date.now().toString().slice(-8))}</b></div><div class="sumrow"><span>Status</span><b class="positive">${o.status||'Submitted'}</b></div></div><button class="primary full" onclick="go('notifications')">View Notification</button><button class="ghost full" onclick="go('home')">Done</button></div></section></main>`}
+function airtime(){const selectedNetwork=state.airNetwork||'MTN';const selectedAmount=state.airAmount||'₦500';app.innerHTML=`<main class="shell"><section class="screen">${header('Airtime','Fast and secure airtime purchase')}<div class="notice"><b>Dispenser approval:</b> Every airtime sale is submitted for manual review before the client is credited.</div><div class="form"><label class="label">Network</label>${customDropdown('airNetworkDropdown',selectedNetwork,networks.map((n,i)=>({value:n,label:n,icon:['🟡','🔴','🟢','🔵'][i]})),'selectAirtimeNetwork')}<label class="label airtime-label-gap">Recipient phone number</label><input id="airPhone" class="input" inputmode="numeric" maxlength="11" placeholder="08012345678"><label class="label airtime-label-gap">Amount</label>${customDropdown('airAmountDropdown',selectedAmount,['₦500','₦1,000','₦2,000','₦5,000','₦10,000'].map(v=>({value:v,label:v,icon:'₦'})),'selectAirtimeAmount')}<button class="primary full" onclick="submitAirtime()">Submit for Approval</button></div></section>${bottom('airtime')}</main>`}
+function customDropdown(id,selected,options,handler){const current=options.find(o=>o.value===selected)||options[0];return `<div class="custom-select" id="${id}"><button type="button" class="select-trigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleDropdown('${id}')"><span class="select-value">${current.icon?`<span class="select-icon">${current.icon}</span>`:''}<span><b>${esc(current.label)}</b>${id==='airNetworkDropdown'?'<small>Choose your mobile network</small>':'<small>Select purchase amount</small>'}</span></span><span class="select-chevron">⌄</span></button><div class="select-menu" role="listbox">${options.map(o=>`<button type="button" class="select-option ${o.value===selected?'selected':''}" role="option" aria-selected="${o.value===selected}" onclick="${handler}('${o.value.replace(/'/g,"\\'")}')"><span class="option-icon">${o.icon||''}</span><span><b>${esc(o.label)}</b>${id==='airNetworkDropdown'?'<small>Available for airtime purchase</small>':''}</span>${o.value===selected?'<span class="option-check">✓</span>':''}</button>`).join('')}</div></div>`}
+function toggleDropdown(id){const target=document.getElementById(id);if(!target)return;document.querySelectorAll('.custom-select.open').forEach(x=>{if(x!==target)x.classList.remove('open')});target.classList.toggle('open');const trigger=target.querySelector('.select-trigger');trigger.setAttribute('aria-expanded',target.classList.contains('open')?'true':'false')}
+function closeDropdowns(){document.querySelectorAll('.custom-select.open').forEach(x=>{x.classList.remove('open');x.querySelector('.select-trigger')?.setAttribute('aria-expanded','false')})}
+function selectAirtimeNetwork(value){state.airNetwork=value;save();closeDropdowns();airtime()}
+function selectAirtimeAmount(value){state.airAmount=value;save();closeDropdowns();airtime()}
+function submitAirtime(){const phone=document.getElementById('airPhone').value.trim();if(phone.length<10)return toast('Enter a valid phone number');state.airtimeRequests.push({network:state.airNetwork||'MTN',phone,amount:state.airAmount||'₦500',status:'Pending'});save();toast('Sent to dispenser');go('airtimePending')}
 function airtimePending(){app.innerHTML=`<main class="shell"><section class="screen">${header('Airtime Approval','Dispenser review')}<div class="state"><div class="stateico">⏳</div><h2>Awaiting dispenser approval</h2><p class="sub">Your airtime request is queued. A dispenser can review it from the staff console.</p><button class="primary full" onclick="go('dispenser')">Open Dispenser Console</button></div></section></main>`}
 function airtimeSuccess(){app.innerHTML=`<main class="shell"><section class="screen"><div class="state"><div class="stateico">✓</div><h2>Airtime Credited</h2><p class="sub">Data Connect has recorded the approved airtime credit. The client notification is generated automatically.</p><div class="notice">📩 <b>Client message:</b> Data Connect has credited your airtime amount. Your dispenser has completed the transaction.</div><button class="primary full" onclick="go('notifications')">View Notification</button></div></section></main>`}
-async function wallet(){await refreshBackendData();let tx=[];try{if(DC_API.base()&&DC_API.token)tx=(await DC_API.transactions()).transactions||[]}catch(e){}app.innerHTML=`<main class="shell"><section class="screen">${header('Wallet','Live wallet & ledger')}<div class="hero"><div class="eyebrow">Available Balance</div><div class="balance">${money(state.balance)}</div><div class="hero-actions"><button class="whitebtn" onclick="toast('Connect a payment gateway for live funding')">＋ Add Money</button><button class="whitebtn" onclick="go('withdraw')">↗ Withdraw</button></div></div><div class="section"><div class="sectionhead"><h2>Recent wallet activity</h2><a onclick="go('transactions')">See all</a></div><div class="section list">${tx.length?tx.slice(0,6).map(txRow).join(''):`<div class="row"><div class="rowmain"><b>No transactions yet</b><small>Your wallet ledger will appear here.</small></div></div>`}</div></div></section>${bottom('wallet')}</main>`}
+async function wallet(){await refreshBackendData();let tx=[];try{if(DC_API.base()&&DC_API.token)tx=(await DC_API.transactions()).transactions||[]}catch(e){}if(!tx.length)tx=state.walletTransactions||[];app.innerHTML=`<main class="shell"><section class="screen">${header('Wallet','Balance & transaction ledger')}<div class="hero"><div class="eyebrow">Available Balance</div><div class="balance">${money(state.balance)}</div><div class="hero-actions"><button class="whitebtn" onclick="fundWalletDemo()">＋ Add Money</button><button class="whitebtn" onclick="go('withdraw')">↗ Withdraw</button></div></div><div class="section"><div class="sectionhead"><h2>Recent wallet activity</h2><a onclick="go('transactions')">See all</a></div><div class="section list">${tx.length?tx.slice(0,6).map(txRow).join(''):`<div class="state"><div class="stateico">₦</div><h2>No transactions yet</h2><p class="sub">Your data, airtime, funding, earnings and withdrawal records will appear here.</p></div>`}</div></div></section>${bottom('wallet')}</main>`}
+function fundWalletDemo(){const amount=5000;state.balance=Number(state.balance||0)+amount;state.walletTransactions=state.walletTransactions||[];state.walletTransactions.unshift({type:'Wallet Funding',description:'Demo wallet funding',amount:amount,status:'Successful',reference:'DC-FUND-'+Date.now().toString().slice(-8),created_at:new Date().toISOString()});state.notifications=(state.notifications||0)+1;save();toast('₦5,000 added in demo mode');wallet()}
 function txRow(t){const positive=['credit','refund','share_return'].includes(t.type);return `<div class="row"><div class="ico">${positive?'＋':'−'}</div><div class="rowmain"><b>${esc(t.description||t.type)}</b><small>${esc(t.reference||'')} · ${esc(t.created_at||'')}</small></div><div class="amount ${positive?'positive':'negative'}">${positive?'+':'−'}${money(t.amount)}</div></div>`}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c))}
-async function transactions(){let tx=[];try{if(DC_API.base()&&DC_API.token)tx=(await DC_API.transactions()).transactions||[]}catch(e){}app.innerHTML=`<main class="shell"><section class="screen">${header('Transactions','Live wallet ledger')}<div class="pillbar"><span class="pill active">All</span><span class="pill">Credits</span><span class="pill">Debits</span><span class="pill">Refunds</span></div><div class="section list">${tx.length?tx.map(txRow).join(''):`<div class="row"><div class="rowmain"><b>No transaction history</b><small>Completed wallet activity will appear here.</small></div></div>`}</div></section>${bottom('wallet')}</main>`}
-async function shares(){let packages=[];try{if(DC_API.base()&&DC_API.token)packages=(await DC_API.shares()).packages||[]}catch(e){}if(!packages.length)packages=sharePackages.map((x,i)=>({id:i+1,investment_amount:Number(x[0].replace(/[^0-9]/g,'')),daily_amount:Number(x[1].replace(/[^0-9]/g,'')),duration_days:Number(x[2].split(' ')[0])}));app.innerHTML=`<main class="shell"><section class="screen">${header('Shares','Company shareholder packages')}<div class="notice">These are the company's proposed packages. Confirm the legal structure, disclosures and applicable requirements before enabling live investment/payout operations.</div><div class="cards">${packages.map(p=>`<div class="package"><div class="amountbig">${money(p.investment_amount)}</div><div class="daily">${money(p.daily_amount)}/day</div><small>${p.duration_days} days</small><button class="primary" onclick="buyShareNow(${p.id})">Buy Package</button></div>`).join('')}</div></section></main>`}
-async function buyShareNow(id){try{if(DC_API.base()&&DC_API.token){const r=await DC_API.buyShare(id);state.shareholder=true;await refreshBackendData();save();toast(r.message||'Share purchased');return go('wallet')}state.shareholder=true;save();toast('Demo package selected')}catch(e){toast(e.message||'Unable to purchase package')}}
+async function transactions(){let tx=[];try{if(DC_API.base()&&DC_API.token)tx=(await DC_API.transactions()).transactions||[]}catch(e){}if(!tx.length)tx=state.walletTransactions||[];app.innerHTML=`<main class="shell"><section class="screen">${header('Transactions','Wallet activity')}<div class="pillbar"><span class="pill active">All</span><span class="pill">Credits</span><span class="pill">Debits</span><span class="pill">Withdrawals</span></div><div class="section list">${tx.length?tx.map(txRow).join(''):`<div class="state"><div class="stateico">📄</div><h2>No transaction history</h2><p class="sub">Completed wallet activity will appear here.</p></div>`}</div></section>${bottom('wallet')}</main>`}
+async function shares(){
+  let packages=[];
+  try{
+    if(DC_API.base()&&DC_API.token) packages=(await DC_API.shares()).packages||[];
+  }catch(e){}
+  if(!packages.length){
+    packages=sharePackages.map((x,i)=>({
+      id:i+1,
+      investment_amount:Number(x[0].replace(/[^0-9]/g,'')),
+      daily_amount:Number(x[1].replace(/[^0-9]/g,'')),
+      duration_days:Number(x[2].split(' ')[0])
+    }));
+  }
+  const active=!!state.shareholder;
+  const total=p=>Number(p.investment_amount)+Number(p.daily_amount)*Number(p.duration_days);
+  app.innerHTML=`<main class="shell"><section class="screen">
+    ${header('Shares','Shareholder packages')}
+    <div class="notice">Package figures shown below are configured company terms for the app interface. They are not a guarantee of returns. Live eligibility, funding, payouts and withdrawal approvals must be controlled by the production backend and applicable company requirements.</div>
+    ${active?`<div class="shareholderCard"><div><small>Shareholder status</small><b>Active shareholder</b></div><span class="tag shareActive">Eligible</span></div>`:''}
+    <div class="section"><div class="sectionhead"><h2>Available Packages</h2><span class="sub">${packages.length} packages</span></div>
+      <div class="cards shareGrid">${packages.map((p,i)=>`<div class="package sharePackage">
+        <div class="shareTop"><span class="shareBadge">PACKAGE ${i+1}</span><span class="tag">${p.duration_days} DAYS</span></div>
+        <div class="amountbig">${money(p.investment_amount)}</div>
+        <div class="daily">${money(p.daily_amount)} / day</div>
+        <div class="shareRows">
+          <div><span>Duration</span><b>${p.duration_days} days</b></div>
+          <div><span>Daily amount</span><b>${money(p.daily_amount)}</b></div>
+          <div><span>Scheduled total*</span><b>${money(total(p))}</b></div>
+        </div>
+        <button class="primary full" onclick="buyShareNow(${p.id})">Select Package</button>
+      </div>`).join('')}</div>
+    </div>
+    <div class="summary">
+      <div class="sumrow"><span>Withdrawal access</span><b>${active?'Available':'Shareholder required'}</b></div>
+      <div class="sumrow"><span>Withdrawal options</span><b>₦500 · ₦1,000 · ₦2,000 · ₦5,000 · ₦10,000</b></div>
+    </div>
+    <p class="sub" style="margin-top:12px">*Scheduled total is an interface calculation from the configured package figures; actual settlement is determined by the company backend.</p>
+    <button class="ghost full" onclick="go('withdraw')">View Withdrawal</button>
+  </section></main>`;
+}
+async function buyShareNow(id){
+  const selected=sharePackages[id-1];
+  if(!selected)return toast('Package unavailable');
+  if(!confirm('Continue with this shareholder package?'))return;
+  try{
+    if(typeof showDataConnectLoading==='function')showDataConnectLoading('Processing package...');
+    if(DC_API.base()&&DC_API.token){
+      const r=await DC_API.buyShare(id);
+      state.shareholder=true;
+      await refreshBackendData();
+      save();
+      if(typeof hideDataConnectLoading==='function')hideDataConnectLoading();
+      toast(r.message||'Package request submitted');
+      return go('wallet');
+    }
+    state.shareholder=true;
+    state.selectedSharePackage=id;
+    save();
+    setTimeout(()=>{
+      if(typeof hideDataConnectLoading==='function')hideDataConnectLoading();
+      toast('Demo package selected');
+      go('shares');
+    },700);
+  }catch(e){
+    if(typeof hideDataConnectLoading==='function')hideDataConnectLoading();
+    toast(e.message||'Unable to process package');
+  }
+}
 function withdraw(){app.innerHTML=`<main class="shell"><section class="screen">${header('Withdrawal','Shareholders only')}<div class="notice">🔒 Only active shareholders can request withdrawal. The backend reserves the amount until staff approves or rejects it.</div>${state.shareholder?`<div class="tag successTag">Eligible shareholder</div>`:`<div class="tag">Not yet a shareholder</div>`}<div class="form"><label class="label">Withdrawal amount</label><select id="wdAmount" class="input"><option value="500">₦500</option><option value="1000">₦1,000</option><option value="2000">₦2,000</option><option value="5000">₦5,000</option><option value="10000">₦10,000</option></select><label class="label" style="margin-top:14px">Bank account number</label><input id="wdAccount" class="input" inputmode="numeric" placeholder="10-digit account number"><label class="label" style="margin-top:14px">Bank</label><input id="wdBank" class="input" placeholder="Bank name"><button class="primary full" onclick="submitWithdrawal()">Request Withdrawal</button></div></section></main>`}
 async function submitWithdrawal(){if(!state.shareholder)return toast('Purchase a shareholder package first');const account=document.getElementById('wdAccount').value.trim(),bank=document.getElementById('wdBank').value.trim();if(!/^\d{10}$/.test(account)||!bank)return toast('Enter a valid 10-digit account and bank');try{if(DC_API.base()&&DC_API.token){const r=await DC_API.withdrawalRequest(Number(document.getElementById('wdAmount').value));await refreshBackendData();toast(r.message||'Withdrawal submitted');return go('transactions')}toast('Demo withdrawal submitted')}catch(e){toast(e.message||'Unable to submit withdrawal')}}
 function marketer(){if(!canSeeMarketer()){toast('Marketer access is assigned by admin');return go('home')}app.innerHTML=`<main class="shell"><section class="screen">${header('Marketer','Section B profile')}<div class="profile"><div class="avatar">M</div><div><b>Marketer Profile</b><div class="tag">Pending approval</div></div></div><div class="notice">Eligibility rule: account must meet the company's required balance level of ₦3,250 or ₦7,000 and at least 12GB, subject to final company policy.</div><div class="form"><label class="label">Marketer ID</label><input class="input" placeholder="Assigned by admin"><label class="label" style="margin-top:14px">Name</label><input class="input" placeholder="Full name"><label class="label" style="margin-top:14px">Location</label><input class="input" placeholder="City / area"><label class="label" style="margin-top:14px">Monthly pay</label><input class="input" inputmode="numeric" placeholder="₦0.00"><label class="label" style="margin-top:14px">Upload picture</label><input class="input" type="file" accept="image/*"><label class="label" style="margin-top:14px">Guarantor name</label><input class="input" placeholder="Guarantor full name"><label class="label" style="margin-top:14px">Guarantor number</label><input class="input" inputmode="tel" placeholder="08012345678"><button class="primary full" onclick="state.marketerApproved=true;save();toast('Marketer application saved');go('marketerStatus')">Submit Marketer Profile</button></div></section></main>`}
@@ -103,10 +183,19 @@ function marketerStatus(){app.innerHTML=`<main class="shell"><section class="scr
 function staff(){if(!canSeeStaff()){toast('Staff/SIC access is assigned by admin');return go('home')}app.innerHTML=`<main class="shell"><section class="screen">${header('SIC / Staff Chat','Work communication')}<div class="notice">🕘 Staff chat is intended for configured working hours only. Final company hours must be set by an administrator.</div><div class="profile"><div class="avatar">S</div><div><b>Staff support</b><div class="tag">${state.staffOnline?'Online during demo':'Outside work hours'}</div></div></div><div class="chat"><div class="bubble staff">Hello. Staff work chat is available during approved working hours.</div><div class="bubble me">I need help checking a customer transaction.</div></div><div class="form"><input class="input" placeholder="Type work message..."><button class="primary full" onclick="toast('Staff message sent')">Send</button></div></section></main>`}
 function dispenser(){if(!canSeeDispenser()){toast('Dispenser access is assigned by admin');return go('home')}const pending=state.airtimeRequests.filter(x=>x.status==='Pending');app.innerHTML=`<main class="shell"><section class="screen">${header('Dispenser Console','Manual airtime approval')}<div class="notice">Only authorized dispensers should approve airtime sales. Production will enforce staff authentication and permissions on the backend.</div><div class="cards">${pending.length?pending.map((r,i)=>`<div class="option"><div class="bigico">📱</div><div style="flex:1"><strong>${r.network} · ${r.amount}</strong><small>${r.phone}</small></div><button class="primary" onclick="approveAirtime(${state.airtimeRequests.indexOf(r)})">Approve</button></div>`).join(''):`<div class="state"><div class="stateico">✓</div><h2>No pending sales</h2><p class="sub">All submitted airtime requests have been reviewed.</p></div>`}</div><button class="ghost full" onclick="go('staff')">SIC / Staff Chat</button></section></main>`}
 function approveAirtime(i){state.airtimeRequests[i].status='Approved';state.notifications=(state.notifications||0)+1;save();toast('Airtime approved and client notification queued');go('airtimeSuccess')}
-function notifications(){app.innerHTML=`<main class="shell"><section class="screen">${header('Notifications','Data Connect alerts')}<div class="section list"><div class="row"><div class="ico">📩</div><div class="rowmain"><b>Data Connect credit notification</b><small>Your credited amount has been recorded.</small></div></div><div class="row"><div class="ico">✓</div><div class="rowmain"><b>Data purchase submitted</b><small>Transaction has been sent for processing.</small></div></div><div class="row"><div class="ico">🛡️</div><div class="rowmain"><b>Account security</b><small>Keep your password private.</small></div></div></div></section></main>`}
+function notifications(){
+const hasNotifications=Number(state.notifications||0)>0;
+app.innerHTML=`<main class="shell"><section class="screen">${header('Notifications','Data Connect alerts')}${
+hasNotifications
+? `<div class="section list"><div class="row"><div class="ico">📩</div><div class="rowmain"><b>Data Connect credit notification</b><small>Your credited amount has been recorded.</small></div></div><div class="row"><div class="ico">✓</div><div class="rowmain"><b>Data purchase submitted</b><small>Transaction has been sent for processing.</small></div></div><div class="row"><div class="ico">🛡️</div><div class="rowmain"><b>Account security</b><small>Keep your password private.</small></div></div></div>`
+: `<div class="state"><div class="stateico">🔔</div><h2>No Notifications</h2><p class="sub">You have no new Data Connect updates.</p><button class="primary full" onclick="go('home')">Back to Home</button></div>`
+}</section></main>`}
 function support(){app.innerHTML=`<main class="shell"><section class="screen">${header('Customer Care','Help and support')}<div class="notice">Customer Care is available for account, data, airtime and wallet support.</div><div class="chat"><div class="bubble staff">Welcome to Data Connect Customer Care. How can we help?</div><div class="bubble me">I need help with a transaction.</div><div class="bubble staff">Please send your transaction reference and we will check it.</div></div><div class="form"><input class="input" placeholder="Type your message..."><button class="primary full" onclick="toast('Message sent to Customer Care')">Send Message</button></div></section></main>`}
-function account(){app.innerHTML=`<main class="shell"><section class="screen">${header('Account','Profile and settings')}<div class="profile"><div class="avatar">${(state.user||'D')[0].toUpperCase()}</div><div><b>${state.user}</b><div class="tag">${state.role}</div><small style="display:block;color:var(--muted);margin-top:4px">Account verified in demo</small></div></div><div class="section list settings"><div class="row" onclick="toast('Profile editor ready')"><div class="ico">👤</div><div class="rowmain"><b>Profile</b><small>Phone, username and personal details</small></div><b>›</b></div>${canSeeMarketer()?`<div class="row" onclick="go('marketer')"><div class="ico">🪪</div><div class="rowmain"><b>Marketer Profile</b><small>Section B application</small></div><b>›</b></div>`:''}<div class="row" onclick="go('shares')"><div class="ico">📈</div><div class="rowmain"><b>Shareholder</b><small>View company packages</small></div><b>›</b></div><div class="row" onclick="go('support')"><div class="ico">🎧</div><div class="rowmain"><b>Customer Care</b><small>Get support</small></div><b>›</b></div><div class="row" onclick="state.loggedIn=false;DC_API.logout();save();go('login')"><div class="ico">↪</div><div class="rowmain"><b>Logout</b><small>Sign out</small></div><b>›</b></div></div><button class="ghost full" onclick="go('backend')">⚙ Backend Connection</button></section>${bottom('account')}</main>`}
+function account(){app.innerHTML=`<main class="shell"><section class="screen">${header('Account','Profile and settings')}<div class="profile"><div class="avatar">${(state.user||'D')[0].toUpperCase()}</div><div><b>${state.user}</b><div class="tag">${state.role}</div><small style="display:block;color:var(--muted);margin-top:4px">Account verified in demo</small></div></div><div class="section list settings"><div class="row" onclick="toast('Profile editor ready')"><div class="ico">👤</div><div class="rowmain"><b>Profile</b><small>Phone, username and personal details</small></div><b>›</b></div>${canSeeMarketer()?`<div class="row" onclick="go('marketer')"><div class="ico">🪪</div><div class="rowmain"><b>Marketer Profile</b><small>Section B application</small></div><b>›</b></div>`:''}<div class="row" onclick="go('shares')"><div class="ico">📈</div><div class="rowmain"><b>Shareholder</b><small>View company packages</small></div><b>›</b></div><div class="row" onclick="go('support')"><div class="ico">🎧</div><div class="rowmain"><b>Customer Care</b><small>Get support</small></div><b>›</b></div><div class="row" onclick="state.loggedIn=false;try{AndroidBiometric.disable()}catch(e){};DC_API.logout();save();go('login')"><div class="ico">↪</div><div class="rowmain"><b>Logout</b><small>Sign out</small></div><b>›</b></div></div><button class="ghost full" onclick="go('backend')">⚙ Backend Connection</button></section>${bottom('account')}</main>`}
 function about(){app.innerHTML=`<main class="shell"><section class="screen">${header('Data Connect','Smart Way to Buy Data')}<div class="state"><div class="stateico">DC</div><h2>One app, connected services</h2><p class="sub">Data Center · Airtime · Wallet · Shares · Marketers · Withdrawal · SIC/Staff Chat · Customer Care</p><div class="notice">Installable mobile experience: the Android build packages the Data Connect web interface for phone use. V06 demo UI is designed around the company's current requirements. Real authentication, MySQL wallet, provider API, approvals, notifications and staff controls are backend work for the production stage.</div></div></section></main>`}
+function errorState(message='We could not complete your request.'){
+app.innerHTML=`<main class="shell"><section class="screen">${header('Something went wrong','Data Connect')}<div class="state"><div class="stateico">✕</div><h2>Transaction Failed</h2><p class="sub">${esc(message)}</p><button class="primary full" onclick="go('summary')">Try Again</button><button class="ghost full" onclick="go('home')">Back to Home</button></div></section></main>`}
+function connectionError(){app.innerHTML=`<main class="shell"><section class="screen">${header('Connection Problem','Data Connect')}<div class="state"><div class="stateico">⚠</div><h2>Connection Problem</h2><p class="sub">Please check your internet connection and try again.</p><button class="primary full" onclick="location.reload()">Retry</button></div></section></main>`}
 function render(){if(['marketer','staff','dispenser'].includes(state.page)){if(state.page==='marketer'&&!canSeeMarketer())return go('home');if(state.page==='staff'&&!canSeeStaff())return go('home');if(state.page==='dispenser'&&!canSeeDispenser())return go('home')}if(['login','signup'].includes(state.page))return auth();const map={home,dispenser,data,planSelection,recipient,summary,confirm,pending,success,airtime,airtimePending,airtimeSuccess,wallet,transactions,shares,withdraw,marketer,marketerStatus,staff,notifications,support,account,about,backend:backendSettings};(map[state.page]||home)()}
 render();
 
@@ -129,4 +218,225 @@ window.DC_WORKFLOW = {
   marketerEligible(balance, gb) {
     return Number(balance) >= 3250 && Number(gb) >= 12;
   }
+};
+
+// V13.2 loading helpers
+function showDataConnectLoading(message){let e=document.getElementById("dc-loader");if(!e){e=document.createElement("div");e.id="dc-loader";e.className="dc-loader";e.innerHTML="<div class=\"dc-spinner\"></div><div></div>";document.body.appendChild(e);}e.querySelector("div:last-child").textContent=message||"Loading...";}
+function hideDataConnectLoading(){const e=document.getElementById("dc-loader");if(e)e.remove();}
+
+/* ================= DATA CONNECT V13.6 FORGOT PASSWORD ================= */
+const DC_V13_6_FORGOT_PASSWORD = true;
+
+function dcV136ForgotPassword(){
+  const email = prompt("Enter the email or phone number linked to your account:");
+  if(!email || !String(email).trim()) return;
+  const identifier = String(email).trim();
+
+  // Production API path: use the app's configured API when available.
+  if(typeof DC_API !== "undefined" && DC_API.base && DC_API.base()){
+    if(typeof showDataConnectLoading === "function") showDataConnectLoading("Sending reset code...");
+    fetch(DC_API.base().replace(/\/$/,"") + "/api/auth/forgot-password", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({identifier:identifier})
+    })
+    .then(async r => {
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data.message || "Unable to send reset code.");
+      return data;
+    })
+    .then(data=>{
+      if(typeof hideDataConnectLoading==="function") hideDataConnectLoading();
+      const code=data.reset_code || data.otp || "";
+      const entered=prompt(data.message || "Enter the reset code sent to you:");
+      if(!entered) return;
+      if(code && entered!==String(code)) throw new Error("Invalid reset code.");
+      const password=prompt("Create a new password (minimum 8 characters):");
+      if(!password || password.length<8) throw new Error("Password must be at least 8 characters.");
+      return fetch(DC_API.base().replace(/\/$/,"") + "/api/auth/reset-password",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({identifier:identifier,reset_code:entered,new_password:password})
+      });
+    })
+    .then(async r=>{
+      if(!r) return;
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data.message || "Password reset failed.");
+      if(typeof hideDataConnectLoading==="function") hideDataConnectLoading();
+      if(typeof toast==="function") toast(data.message || "Password reset successful. You can now log in.");
+    })
+    .catch(e=>{
+      if(typeof hideDataConnectLoading==="function") hideDataConnectLoading();
+      if(typeof errorState==="function") errorState(e.message);
+      else alert(e.message);
+    });
+    return;
+  }
+
+  // Demo fallback for offline APK/UI testing. Production must use the backend path above.
+  const demoCode = String(Math.floor(100000 + Math.random()*900000));
+  alert("Demo reset code: " + demoCode);
+  const entered=prompt("Enter the reset code:");
+  if(entered!==demoCode) return alert("Invalid reset code.");
+  const password=prompt("Create a new password (minimum 8 characters):");
+  if(!password || password.length<8) return alert("Password must be at least 8 characters.");
+  if(typeof toast==="function") toast("Password reset successful. You can now log in.");
+  else alert("Password reset successful. You can now log in.");
+}
+
+/* Data Connect V13.7 Roles */
+const DC_V13_7_ROLES = {
+ CUSTOMER: "customer",
+ MARKETER: "marketer",
+ STAFF_SIC: "staff_sic",
+ DISPENSER: "dispenser",
+ ADMIN: "admin"
+};
+
+/* ================= DATA CONNECT V13.7.1 ADMIN ================= */
+const DC_V13_7_1_ADMIN = true;
+const DC_V13_7_1_ROLES = [
+  {key:"customer", label:"Customer"},
+  {key:"marketer", label:"Marketer"},
+  {key:"staff_sic", label:"Staff / SIC"},
+  {key:"dispenser", label:"Dispenser"}
+];
+
+function dcV1371IsAdmin(user){
+  return !!user && String(user.role||"").toLowerCase() === "admin";
+}
+
+function dcV1371AdminUsers(container, users, currentUser){
+  if(!container) return;
+  if(!dcV1371IsAdmin(currentUser)){
+    container.innerHTML='<div class="dc-admin-denied">Admin access required.</div>';
+    return;
+  }
+  users=Array.isArray(users)?users:[];
+  container.innerHTML=`
+    <section class="dc-admin">
+      <div class="dc-admin-head"><h2>User Management</h2><p>Assign and manage privileged roles.</p></div>
+      <input class="dc-admin-search" placeholder="Search users..." oninput="dcV1371FilterUsers(this.value)">
+      <div id="dc-admin-users">
+        ${users.map(u=>dcV1371UserCard(u)).join("") || '<div class="dc-admin-empty">No users found.</div>'}
+      </div>
+    </section>`;
+  window.dcV1371Users=users;
+}
+
+function dcV1371UserCard(u){
+  const role=String(u.role||"customer");
+  return `<article class="dc-admin-user" data-search="${String((u.name||"")+" "+(u.email||"")+" "+role).toLowerCase()}">
+    <div><b>${u.name||"User"}</b><small>${u.email||u.phone||""}</small><span>${role}</span></div>
+    <button type="button" onclick="dcV1371ManageUser(${Number(u.id||0)})">Manage</button>
+  </article>`;
+}
+
+function dcV1371FilterUsers(q){
+  q=String(q||"").toLowerCase();
+  document.querySelectorAll(".dc-admin-user").forEach(x=>{
+    x.style.display=x.dataset.search.includes(q)?"flex":"none";
+  });
+}
+
+function dcV1371ManageUser(id){
+  const u=(window.dcV1371Users||[]).find(x=>Number(x.id)===Number(id));
+  if(!u) return;
+  const choices=DC_V13_7_1_ROLES.map(r=>`${r.key===u.role?"●":"○"} ${r.label}`).join("\n");
+  const selected=prompt("Assign role:\n\n"+choices+"\n\nEnter: customer, marketer, staff_sic, or dispenser",u.role||"customer");
+  if(!selected) return;
+  const role=selected.trim().toLowerCase();
+  if(!DC_V13_7_1_ROLES.some(r=>r.key===role)) return alert("Invalid role.");
+  if(!confirm("Confirm role change to "+role+"?")) return;
+  u.role=role;
+  if(typeof toast==="function") toast("Role updated");
+  if(window.dcV1371AdminRefresh) window.dcV1371AdminRefresh();
+}
+
+function dcV1371SuspendUser(id){
+  if(!confirm("Suspend this account?")) return;
+  if(typeof toast==="function") toast("Account suspension requested");
+}
+
+function dcV1371ActivateUser(id){
+  if(!confirm("Activate this account?")) return;
+  if(typeof toast==="function") toast("Account activation requested");
+}
+
+/* ================= DATA CONNECT V13.8 OPERATIONAL ROLES ================= */
+const DC_V13_8_OPERATIONAL_ROLES = {
+  marketer: {
+    title:"Marketer Dashboard",
+    subtitle:"Manage your assigned marketing activities",
+    items:["Assigned Customers","Referral Activity","Marketing Status","Earnings"]
+  },
+  staff_sic: {
+    title:"Staff / SIC Dashboard",
+    subtitle:"Manage assigned operational requests",
+    items:["Pending Requests","Airtime / Data Requests","Processing","Completed"]
+  },
+  dispenser: {
+    title:"Dispenser Dashboard",
+    subtitle:"Process assigned dispensing requests",
+    items:["Assigned Requests","Process Request","Completed","History"]
+  }
+};
+
+function dcV138RoleKey(user){
+  return String(user && user.role || "customer").toLowerCase();
+}
+
+function dcV138RenderOperationalDashboard(container,user){
+  if(!container) return false;
+  const role=dcV138RoleKey(user);
+  const cfg=DC_V13_8_OPERATIONAL_ROLES[role];
+  if(!cfg) return false;
+  container.innerHTML=`
+    <section class="dc-v138-dashboard">
+      <div class="dc-v138-hero">
+        <small>DATACONNECT</small>
+        <h2>${cfg.title}</h2>
+        <p>${cfg.subtitle}</p>
+      </div>
+      <div class="dc-v138-grid">
+        ${cfg.items.map((x,i)=>`
+          <button type="button" class="dc-v138-card" onclick="dcV138OperationalAction('${role}',${i})">
+            <span>${["✓","▣","↻","≡"][i]||"•"}</span>
+            <b>${x}</b><small>Open</small>
+          </button>`).join("")}
+      </div>
+    </section>`;
+  return true;
+}
+
+function dcV138OperationalAction(role,index){
+  if(typeof toast==="function"){
+    const name=DC_V13_8_OPERATIONAL_ROLES[role]?.items[index]||"Request";
+    toast(name+" opened");
+  }
+}
+
+/* Data Connect V13.8.1 Backend API Map */
+const DC_V13_8_1_API_MAP = {
+ admin:{
+  users:"/api/admin/users",
+  assignRole:"/api/admin/assign-role",
+  removeRole:"/api/admin/remove-role",
+  suspend:"/api/admin/suspend-user"
+ },
+ marketer:{
+  dashboard:"/api/marketer/dashboard",
+  customers:"/api/marketer/customers",
+  earnings:"/api/marketer/earnings"
+ },
+ staff:{
+  dashboard:"/api/staff/dashboard",
+  requests:"/api/staff/requests",
+  update:"/api/staff/update-status"
+ },
+ dispenser:{
+  tasks:"/api/dispenser/tasks",
+  process:"/api/dispenser/process"
+ }
 };
