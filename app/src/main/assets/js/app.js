@@ -13,7 +13,18 @@ function profileInitials(){const n=String(state.user||'Data Connect User').trim(
 function profilePictureButton(){return `<button class="profile-picture-btn" onclick="go('account')" aria-label="Open profile" title="Profile">${state.profilePicture?`<img src="${esc(state.profilePicture)}" alt="Profile picture">`:`<span>${esc(profileInitials())}</span>`}</button>`}
 function header(title,sub=''){return `<div class="back"><button onclick="go('home')">←</button><div><b>${title}</b>${sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${sub}</div>`:''}</div></div>`}
 function bottom(active='home'){return `<div class="bottom"><button class="nav ${active==='home'?'active':''}" onclick="go('home')"><i>⌂</i>Home</button><button class="nav ${active==='data'?'active':''}" onclick="go('data')"><i>◉</i>Data</button><button class="nav ${active==='airtime'?'active':''}" onclick="go('airtime')"><i>▣</i>Airtime</button><button class="nav ${active==='wallet'?'active':''}" onclick="go('wallet')"><i>▱</i>Wallet</button><button class="nav ${active==='account'?'active':''}" onclick="go('account')"><i>●</i>Account</button></div>`}
-function go(p){state.page=p;save();render()}
+function showScreenLoader(message='Loading...'){
+  let e=document.getElementById('dc-screen-loader');
+  if(!e){
+    e=document.createElement('div'); e.id='dc-screen-loader'; e.className='dc-screen-loader';
+    e.innerHTML='<div class="dc-loader-card"><div class="dc-loader-logo">DC</div><div class="dc-loader-spinner"></div><div class="dc-loader-title">Data Connect</div><div class="dc-loader-message"></div><div class="dc-loader-bar"><span></span></div></div>';
+    document.body.appendChild(e);
+  }
+  e.querySelector('.dc-loader-message').textContent=message;
+  requestAnimationFrame(()=>e.classList.add('show'));
+}
+function hideScreenLoader(){const e=document.getElementById('dc-screen-loader');if(!e)return;e.classList.remove('show');setTimeout(()=>e.remove(),180)}
+function go(p){state.page=p;save();showScreenLoader('Loading '+(p==='home'?'dashboard':p.replace(/[-_]/g,' '))+'...');setTimeout(()=>{render();setTimeout(hideScreenLoader,120)},180)}
 function biometricAvailable(){try{return typeof AndroidBiometric!=='undefined'&&AndroidBiometric.isAvailable()}catch(e){return false}}
 function biometricEnabled(){try{return biometricAvailable()&&AndroidBiometric.isEnabled()}catch(e){return false}}
 function enableBiometricAfterLogin(token){try{if(token&&biometricAvailable()&&!biometricEnabled()){window.onNativeBiometricEnabled=function(ok){if(ok)toast('Fingerprint login enabled');};AndroidBiometric.enable(token)}}catch(e){}}
@@ -49,7 +60,6 @@ async function doLogin(signup){
       state.phone=result.user?.phone||phone;
       state.role=result.user?.role||'customer';
       state.loggedIn=true;
-      enableBiometricAfterLogin(result.token||DC_API.token||'');
       save();
       toast(signup?'Account created successfully':'Login successful');
       await refreshBackendData();
@@ -191,13 +201,92 @@ hasNotifications
 : `<div class="state"><div class="stateico">🔔</div><h2>No Notifications</h2><p class="sub">You have no new Data Connect updates.</p><button class="primary full" onclick="go('home')">Back to Home</button></div>`
 }</section></main>`}
 function support(){app.innerHTML=`<main class="shell"><section class="screen">${header('Customer Care','Help and support')}<div class="notice">Customer Care is available for account, data, airtime and wallet support.</div><div class="chat"><div class="bubble staff">Welcome to Data Connect Customer Care. How can we help?</div><div class="bubble me">I need help with a transaction.</div><div class="bubble staff">Please send your transaction reference and we will check it.</div></div><div class="form"><input class="input" placeholder="Type your message..."><button class="primary full" onclick="toast('Message sent to Customer Care')">Send Message</button></div></section></main>`}
-function account(){app.innerHTML=`<main class="shell"><section class="screen">${header('Account','Profile and settings')}<div class="profile"><div class="avatar">${(state.user||'D')[0].toUpperCase()}</div><div><b>${state.user}</b><div class="tag">${state.role}</div><small style="display:block;color:var(--muted);margin-top:4px">Account verified in demo</small></div></div><div class="section list settings"><div class="row" onclick="toast('Profile editor ready')"><div class="ico">👤</div><div class="rowmain"><b>Profile</b><small>Phone, username and personal details</small></div><b>›</b></div>${canSeeMarketer()?`<div class="row" onclick="go('marketer')"><div class="ico">🪪</div><div class="rowmain"><b>Marketer Profile</b><small>Section B application</small></div><b>›</b></div>`:''}<div class="row" onclick="go('shares')"><div class="ico">📈</div><div class="rowmain"><b>Shareholder</b><small>View company packages</small></div><b>›</b></div><div class="row" onclick="go('support')"><div class="ico">🎧</div><div class="rowmain"><b>Customer Care</b><small>Get support</small></div><b>›</b></div><div class="row" onclick="state.loggedIn=false;try{AndroidBiometric.disable()}catch(e){};DC_API.logout();save();go('login')"><div class="ico">↪</div><div class="rowmain"><b>Logout</b><small>Sign out</small></div><b>›</b></div></div><button class="ghost full" onclick="go('backend')">⚙ Backend Connection</button></section>${bottom('account')}</main>`}
+function account(){
+  const biometricOn=biometricEnabled();
+  const darkOn=localStorage.getItem('dc_dark_mode')==='1';
+  const email=state.email||'Not added yet';
+  const phone=state.phone||'Not added yet';
+  const fullName=state.fullName||state.user||'Data Connect User';
+  app.innerHTML=`<main class="shell"><section class="screen">${header('Account','Manage your profile, security and preferences')}
+    <div class="account-profile-card">
+      <div class="account-avatar">${state.profilePicture?`<img src="${esc(state.profilePicture)}" alt="Profile picture">`:`<span>${esc(profileInitials())}</span>`}</div>
+      <div class="account-profile-info"><b>${esc(fullName)}</b><div class="tag">${esc(state.role||'Customer')}</div><small>${esc(phone)}</small></div>
+      <button class="mini-action" onclick="toast('Profile editor ready')">Edit</button>
+    </div>
+
+    <div class="section account-section"><h3>👤 Profile</h3><div class="list settings">
+      <div class="row" onclick="toast('Profile editor ready')"><div class="ico">👤</div><div class="rowmain"><b>Profile picture</b><small>Change your profile photo</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Profile editor ready')"><div class="ico">🪪</div><div class="rowmain"><b>Full name</b><small>${esc(fullName)}</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Profile editor ready')"><div class="ico">✉️</div><div class="rowmain"><b>Email</b><small>${esc(email)}</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Profile editor ready')"><div class="ico">📱</div><div class="rowmain"><b>Phone number</b><small>${esc(phone)}</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Profile editor ready')"><div class="ico">✏️</div><div class="rowmain"><b>Edit Profile</b><small>Update your personal details</small></div><b>›</b></div>
+    </div></div>
+
+    <div class="section account-section"><h3>🔐 Security</h3><div class="list settings">
+      <div class="row" onclick="toast('Password change flow ready')"><div class="ico">🔑</div><div class="rowmain"><b>Change Password</b><small>Update your account password</small></div><b>›</b></div>
+      <div class="row"><div class="ico">👆</div><div class="rowmain"><b>Fingerprint / Biometric Login</b><small>${biometricOn?'Enabled':'Enable secure fingerprint sign-in'}</small></div><button class="switch ${biometricOn?'on':''}" onclick="toggleBiometricSetting(event)"><span></span></button></div>
+      <div class="row" onclick="toast('Security controls ready')"><div class="ico">🛡️</div><div class="rowmain"><b>Login & Security</b><small>Manage account security controls</small></div><b>›</b></div>
+    </div></div>
+
+    <div class="section account-section"><h3>🔔 Notifications</h3><div class="list settings">
+      <div class="row" onclick="toast('Notification preferences ready')"><div class="ico">🔔</div><div class="rowmain"><b>Notification Preferences</b><small>Choose what you want to receive</small></div><b>›</b></div>
+      <div class="row"><div class="ico">💳</div><div class="rowmain"><b>Transaction & Service Notifications</b><small>Purchases, wallet and service updates</small></div><button class="switch on" onclick="this.classList.toggle('on');toast('Notification setting updated')"><span></span></button></div>
+    </div></div>
+
+    <div class="section account-section"><h3>⚙️ App Settings</h3><div class="list settings">
+      <div class="row"><div class="ico">🌙</div><div class="rowmain"><b>Dark Mode</b><small>${darkOn?'Enabled':'Use the darker app appearance'}</small></div><button class="switch ${darkOn?'on':''}" onclick="toggleDarkMode(event)"><span></span></button></div>
+      <div class="row"><div class="ico">ℹ️</div><div class="rowmain"><b>App Version</b><small>V14.2.4</small></div><b>›</b></div>
+      <div class="row" onclick="toast('App update check ready')"><div class="ico">⬆️</div><div class="rowmain"><b>App Update</b><small>Check for the latest version</small></div><b>›</b></div>
+      <div class="row" onclick="toast('General preferences ready')"><div class="ico">⚙️</div><div class="rowmain"><b>General Preferences</b><small>Application preferences</small></div><b>›</b></div>
+    </div></div>
+
+    <div class="section account-section"><h3>🆘 Customer Care</h3><div class="list settings">
+      <div class="row" onclick="go('support')"><div class="ico">💬</div><div class="rowmain"><b>Live Chat</b><small>Chat with customer care</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Customer care call action ready')"><div class="ico">📞</div><div class="rowmain"><b>Call Customer Care</b><small>Speak with our support team</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Support email action ready')"><div class="ico">📧</div><div class="rowmain"><b>Email Support</b><small>Send us an email</small></div><b>›</b></div>
+      <div class="row" onclick="go('support')"><div class="ico">❓</div><div class="rowmain"><b>Help Center / FAQ</b><small>Find answers to common questions</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Support tickets ready')"><div class="ico">🎫</div><div class="rowmain"><b>My Support Tickets</b><small>Track your complaints and requests</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Problem report ready')"><div class="ico">📝</div><div class="rowmain"><b>Report a Problem</b><small>Tell us what went wrong</small></div><b>›</b></div>
+    </div></div>
+
+    <div class="section account-section"><h3>📄 Legal</h3><div class="list settings">
+      <div class="row" onclick="toast('Terms and Conditions')"><div class="ico">📄</div><div class="rowmain"><b>Terms & Conditions</b><small>Read the terms of service</small></div><b>›</b></div>
+      <div class="row" onclick="toast('Privacy Policy')"><div class="ico">🔒</div><div class="rowmain"><b>Privacy Policy</b><small>How we handle your information</small></div><b>›</b></div>
+    </div></div>
+
+    <div class="section account-section"><h3>🚪 Account</h3><div class="list settings">
+      <div class="row" onclick="state.loggedIn=false;try{AndroidBiometric.disable()}catch(e){};DC_API.logout();save();go('login')"><div class="ico">↪</div><div class="rowmain"><b>Logout</b><small>Sign out of Data Connect</small></div><b>›</b></div>
+    </div></div>
+    <button class="ghost full" onclick="go('backend')">⚙ Backend Connection</button>
+  </section>${bottom('account')}</main>`
+}
+function toggleBiometricSetting(event){
+  if(event) event.stopPropagation();
+  if(biometricEnabled()){try{AndroidBiometric.disable();toast('Fingerprint login disabled')}catch(e){toast('Unable to disable fingerprint login')}return go('account')}
+  if(!biometricAvailable()) return toast('Biometric authentication is not available on this device');
+  if(!DC_API.token && !localStorage.getItem('dc_auth_token') && !localStorage.getItem('data_connect_token')) return toast('Log in with your password first');
+  try{
+    window.onNativeBiometricEnabled=function(ok){toast(ok?'Fingerprint login enabled':'Fingerprint setup cancelled');go('account')};
+    AndroidBiometric.enable(DC_API.token||localStorage.getItem('dc_auth_token')||localStorage.getItem('data_connect_token'));
+  }catch(e){toast('Fingerprint login is not available on this device')}
+}
+function toggleDarkMode(event){
+  if(event) event.stopPropagation();
+  const on=localStorage.getItem('dc_dark_mode')!=='1';
+  localStorage.setItem('dc_dark_mode',on?'1':'0');
+  document.body.classList.toggle('dc-dark',on);
+  toast(on?'Dark mode enabled':'Dark mode disabled');
+  go('account');
+}
+document.body.classList.toggle('dc-dark',localStorage.getItem('dc_dark_mode')==='1');
+
 function about(){app.innerHTML=`<main class="shell"><section class="screen">${header('Data Connect','Smart Way to Buy Data')}<div class="state"><div class="stateico">DC</div><h2>One app, connected services</h2><p class="sub">Data Center · Airtime · Wallet · Shares · Marketers · Withdrawal · SIC/Staff Chat · Customer Care</p><div class="notice">Installable mobile experience: the Android build packages the Data Connect web interface for phone use. V06 demo UI is designed around the company's current requirements. Real authentication, MySQL wallet, provider API, approvals, notifications and staff controls are backend work for the production stage.</div></div></section></main>`}
 function errorState(message='We could not complete your request.'){
 app.innerHTML=`<main class="shell"><section class="screen">${header('Something went wrong','Data Connect')}<div class="state"><div class="stateico">✕</div><h2>Transaction Failed</h2><p class="sub">${esc(message)}</p><button class="primary full" onclick="go('summary')">Try Again</button><button class="ghost full" onclick="go('home')">Back to Home</button></div></section></main>`}
 function connectionError(){app.innerHTML=`<main class="shell"><section class="screen">${header('Connection Problem','Data Connect')}<div class="state"><div class="stateico">⚠</div><h2>Connection Problem</h2><p class="sub">Please check your internet connection and try again.</p><button class="primary full" onclick="location.reload()">Retry</button></div></section></main>`}
 function render(){if(['marketer','staff','dispenser'].includes(state.page)){if(state.page==='marketer'&&!canSeeMarketer())return go('home');if(state.page==='staff'&&!canSeeStaff())return go('home');if(state.page==='dispenser'&&!canSeeDispenser())return go('home')}if(['login','signup'].includes(state.page))return auth();const map={home,dispenser,data,planSelection,recipient,summary,confirm,pending,success,airtime,airtimePending,airtimeSuccess,wallet,transactions,shares,withdraw,marketer,marketerStatus,staff,notifications,support,account,about,backend:backendSettings};(map[state.page]||home)()}
-render();
+showScreenLoader('Starting Data Connect...');
+setTimeout(()=>{render();setTimeout(hideScreenLoader,350)},450);
 
 function backendSettings(){app.innerHTML=`<main class="shell"><section class="screen">${header('Backend Connection','V11 production API settings')}<div class="notice">Connect the Android app to the deployed PHP API over HTTPS. Keep MySQL and VTU credentials on the server.</div><div class="form"><label class="label">Backend URL</label><input id="apiUrl" class="input" placeholder="https://example.com" value="${DC_API.base()}"><button class="primary full" onclick="saveBackendConnection()">Save connection</button><button class="ghost full" onclick="testBackendConnection()">Test connection</button><button class="ghost full" onclick="DC_API.setBaseUrl('');toast('Demo mode enabled');go('account')">Use demo mode</button><div id="backendTest" class="notice" style="display:none"></div></div></section></main>`}
 function saveBackendConnection(){try{DC_API.setBaseUrl(document.getElementById('apiUrl').value);toast('Backend URL saved');go('account')}catch(e){toast(e.message)}}
