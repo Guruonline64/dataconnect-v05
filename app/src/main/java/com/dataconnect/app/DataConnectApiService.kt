@@ -7,9 +7,9 @@ object DataConnectApiService {
         DataConnectApiClient.request(DataConnectApiRoutes.LOGIN, "POST",
             JSONObject().put("email", phone).put("password", password))
 
-    fun register(phone: String, username: String, password: String) =
+    fun register(name: String, email: String, phone: String, password: String, passwordConfirmation: String = password) =
         DataConnectApiClient.request(DataConnectApiRoutes.REGISTER, "POST",
-            JSONObject().put("phone", phone).put("name", username).put("email", phone).put("password", password).put("password_confirmation", password))
+            JSONObject().put("phone", phone).put("name", name).put("email", email).put("password", password).put("password_confirmation", passwordConfirmation))
 
     fun dashboard() = DataConnectApiClient.request(DataConnectApiRoutes.DASHBOARD)
     fun dataPlans() = DataConnectApiClient.request(DataConnectApiRoutes.DATA_PLANS)

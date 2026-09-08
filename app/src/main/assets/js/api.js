@@ -56,3 +56,31 @@ window.DC_API = {
   async buyShare(share_id,units){ return this.request("/api/v2/shares/purchase",{method:"POST",body:JSON.stringify({share_id,units:Number(units)})}); },
   logout(){ this.token=""; localStorage.removeItem("dc_auth_token"); localStorage.removeItem("data_connect_token"); }
 };
+
+
+/* DataConnect balance visibility sync
+ * Dashboard eye state is shared with the Data screen.
+ */
+(function () {
+  const KEY = "dataconnect_balance_hidden";
+  function isHidden() { return localStorage.getItem(KEY) === "1"; }
+  function maskValue(v) {
+    if (v == null) return v;
+    return "••••••••";
+  }
+  window.DataConnectBalanceVisibility = {
+    setHidden(hidden) {
+      localStorage.setItem(KEY, hidden ? "1" : "0");
+      document.dispatchEvent(new CustomEvent("dataconnect:balance-visibility", {
+        detail: { hidden: !!hidden }
+      }));
+    },
+    isHidden,
+    display(value) { return isHidden() ? maskValue(value) : value; }
+  };
+  document.addEventListener("DOMContentLoaded", function () {
+    document.dispatchEvent(new CustomEvent("dataconnect:balance-visibility", {
+      detail: { hidden: isHidden() }
+    }));
+  });
+})();

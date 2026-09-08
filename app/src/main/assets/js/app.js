@@ -30,7 +30,17 @@ function biometricEnabled(){try{return biometricAvailable()&&AndroidBiometric.is
 function enableBiometricAfterLogin(token){try{if(token&&biometricAvailable()&&!biometricEnabled()){window.onNativeBiometricEnabled=function(ok){if(ok)toast('Fingerprint login enabled');};AndroidBiometric.enable(token)}}catch(e){}}
 function biometricLogin(){try{if(!biometricEnabled())return toast('Log in with your password first to enable fingerprint login');window.onNativeBiometricResult=function(ok,token){if(!ok||!token)return toast('Fingerprint authentication cancelled or failed');DC_API.token=token;localStorage.setItem('dc_auth_token',token);state.loggedIn=true;save();toast('Fingerprint login successful');refreshBackendData().finally(()=>go('home'))};AndroidBiometric.authenticate()}catch(e){toast('Fingerprint login is not available on this device')}}
 
-function auth(){const signup=state.page==='signup';app.innerHTML=`<main class="shell"><section class="auth"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><div class="authbox"><h1>${signup?'Create account':'Welcome back'}</h1><p>${signup?'Register with your phone number and username.':'Sign in securely to your Data Connect account.'}</p><div class="form">${signup?`<label class="label">Username</label><input id="username" class="input" placeholder="Enter username">`:''}<label class="label">Phone number</label><input id="loginPhone" class="input" inputmode="numeric" placeholder="08012345678"><label class="label" style="margin-top:14px">Password</label><div style="position:relative"><input id="loginPassword" class="input" type="password" placeholder="Enter password" style="padding-right:72px"><button type="button" id="togglePasswordBtn" onclick="togglePassword()" aria-label="Show password" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:12px;font-weight:700;padding:8px;color:var(--blue)">Show</button></div><button class="primary full" onclick="doLogin(${signup})">${signup?'Create Account':'Login'}</button>${!signup&&biometricEnabled()?`<button type="button" class="ghost full biometric-login" onclick="biometricLogin()">◉  Login with fingerprint</button>`:''}</div><div class="switch">${signup?'Already have an account?':'New to Data Connect?'} <b onclick="go('${signup?'login':'signup'}')">${signup?'Login':'Create account'}</b></div></div></section></main>`}
+function auth(){
+  const signup=state.page==='signup';
+  app.innerHTML=`<main class="shell"><section class="auth"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><div class="authbox"><h1>${signup?'Create account':'Welcome back'}</h1><p>${signup?'Create your Data Connect account with your personal details.':'Sign in securely to your Data Connect account.'}</p><div class="form">
+  ${signup?`<label class="label">Full name</label><input id="fullName" class="input" placeholder="Enter your full name" autocomplete="name"><label class="label" style="margin-top:14px">Email address</label><input id="signupEmail" class="input" type="email" placeholder="you@example.com" autocomplete="email"><label class="label" style="margin-top:14px">Username</label><input id="username" class="input" placeholder="Choose a username" autocomplete="username">`:''}
+  <label class="label" style="margin-top:14px">Phone number</label><input id="loginPhone" class="input" inputmode="numeric" placeholder="08012345678" autocomplete="tel">
+  <label class="label" style="margin-top:14px">Password</label><div style="position:relative"><input id="loginPassword" class="input" type="password" placeholder="${signup?'Create a password':'Enter password'}" autocomplete="${signup?'new-password':'current-password'}" style="padding-right:72px"><button type="button" id="togglePasswordBtn" onclick="togglePassword()" aria-label="Show password" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:12px;font-weight:700;padding:8px;color:var(--blue)">Show</button></div>
+  ${signup?`<label class="label" style="margin-top:14px">Confirm password</label><div style="position:relative"><input id="confirmPassword" class="input" type="password" placeholder="Confirm your password" autocomplete="new-password" style="padding-right:72px"><button type="button" class="password-toggle-inline" onclick="toggleConfirmPassword()" aria-label="Show confirm password" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:12px;font-weight:700;padding:8px;color:var(--blue)">Show</button></div><label class="terms-check" style="display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:12px;line-height:1.5;color:var(--muted)"><input id="termsPrivacy" type="checkbox" style="margin-top:3px;width:17px;height:17px;accent-color:var(--blue)"><span>I agree to the <button type="button" class="inline-link" onclick="toast('Terms & Conditions')">Terms & Conditions</button> and <button type="button" class="inline-link" onclick="toast('Privacy Policy')">Privacy Policy</button>.</span></label>`:''}
+  <button class="primary full" onclick="doLogin(${signup})">${signup?'Create Account':'Login'}</button>${!signup&&biometricEnabled()?`<button type="button" class="ghost full biometric-login" onclick="biometricLogin()">◉  Login with fingerprint</button>`:''}
+  </div><div class="switch">${signup?'Already have an account?':'New to Data Connect?'} <b onclick="go('${signup?'login':'signup'}')">${signup?'Login':'Create account'}</b></div></div></section></main>`
+}
+function toggleConfirmPassword(){const input=document.getElementById('confirmPassword');const btn=document.querySelector('.password-toggle-inline');if(!input||!btn)return;const showing=input.type==='text';input.type=showing?'password':'text';btn.textContent=showing?'Show':'Hide'}
 async function submitDataPurchase(){
   const p=dataPlans[state.network][state.plan??1];
   if(!state.phone || state.phone.length<10) return toast('Enter a valid recipient number');
@@ -48,35 +58,34 @@ async function submitDataPurchase(){
 }
 async function doLogin(signup){
   const phone=document.getElementById('loginPhone').value.trim();
-  const password=document.getElementById('loginPassword').value.trim();
+  const password=document.getElementById('loginPassword').value;
   if(phone.length<10||password.length<6)return toast('Enter a valid phone and a 6+ character password');
+  if(signup){
+    const name=document.getElementById('fullName').value.trim();
+    const email=document.getElementById('signupEmail').value.trim();
+    const username=document.getElementById('username').value.trim();
+    const confirm=document.getElementById('confirmPassword').value;
+    const consent=document.getElementById('termsPrivacy').checked;
+    if(name.length<2)return toast('Enter your full name');
+    if(!/^\S+@\S+\.\S+$/.test(email))return toast('Enter a valid email address');
+    if(username.length<2)return toast('Enter a username');
+    if(password!==confirm)return toast('Passwords do not match');
+    if(!consent)return toast('Please accept the Terms & Conditions and Privacy Policy');
+    try{
+      if(DC_API.base()){
+        const result=await DC_API.register(name,email,phone,password,confirm);
+        localStorage.setItem('dc_auth_token',result.token||result.data?.token||'');
+        state.user=result.user?.username||username; state.fullName=result.user?.name||name; state.email=result.user?.email||email; state.phone=result.user?.phone||phone; state.role=result.user?.role||'customer'; state.loggedIn=true; save(); toast('Account created successfully'); await refreshBackendData(); return go('home');
+      }
+      state.user=username; state.fullName=name; state.email=email; state.phone=phone; state.loggedIn=true; save(); toast('Demo account created'); return go('home');
+    }catch(e){errorState(e.message||'Unable to create your account.'); return;}
+  }
   try{
     if(DC_API.base()){
-      const result=signup
-        ? await DC_API.register(phone,document.getElementById('username').value.trim(),password)
-        : await DC_API.login(phone,password);
-      localStorage.setItem('dc_auth_token',result.token||'');
-      state.user=result.user?.username||result.user?.phone||'Data Connect User';
-      state.phone=result.user?.phone||phone;
-      state.role=result.user?.role||'customer';
-      state.loggedIn=true;
-      save();
-      toast(signup?'Account created successfully':'Login successful');
-      await refreshBackendData();
-      return go('home');
+      const result=await DC_API.login(phone,password);
+      localStorage.setItem('dc_auth_token',result.token||result.data?.token||''); state.user=result.user?.username||result.user?.phone||'Data Connect User'; state.fullName=result.user?.name||state.fullName||state.user; state.email=result.user?.email||state.email||''; state.phone=result.user?.phone||phone; state.role=result.user?.role||'customer'; state.loggedIn=true; save(); toast('Login successful'); await refreshBackendData(); return go('home');
     }
-    if(signup){
-      const username=document.getElementById('username').value.trim();
-      if(username.length<2)return toast('Enter a username');
-      state.user=username;
-      state.phone=phone;
-      toast('Demo account created');
-    }else{
-      state.user=state.user||'Data Connect User';
-      state.phone=phone;
-      toast('Demo login successful');
-    }
-    state.loggedIn=true; save(); go('home');
+    state.user=state.user||'Data Connect User'; state.phone=phone; state.loggedIn=true; save(); toast('Demo login successful'); go('home');
   }catch(e){errorState(e.message||'Unable to connect to the Data Connect service.');}
 }
 async function refreshBackendData(){
@@ -96,7 +105,7 @@ function canSeeMarketer(){return hasRole('marketer')}
 function canSeeStaff(){return hasRole('staff','sic','staff/sic')}
 function canSeeDispenser(){return hasRole('dispenser','data dispenser')}
 function privilegedServices(){let x='';if(canSeeMarketer())x+=`<button class="service" onclick="go('marketer')"><span>🪪</span><b>Marketer</b></button>`;if(canSeeStaff())x+=`<button class="service" onclick="go('staff')"><span>🛡️</span><b>SIC / Staff</b></button>`;if(canSeeDispenser())x+=`<button class="service" onclick="go('dispenser')"><span>🧾</span><b>Dispenser</b></button>`;return x}
-function home(){app.innerHTML=`<main class="shell"><section class="screen"><div class="top"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><div class="top-actions"><button class="iconbtn" onclick="go('notifications')" aria-label="Notifications">🔔 <sup>${state.notifications}</sup></button>${profilePictureButton()}</div></div><div class="hero"><div class="balance-head"><div class="eyebrow">Available Balance</div></div><div class="balance-row"><div class="balance">${balanceDisplay()}</div><button class="balance-eye" onclick="toggleBalance()" aria-label="${state.balanceVisible?'Hide balance':'Show balance'}" title="${state.balanceVisible?'Hide balance':'Show balance'}">${state.balanceVisible?'◉':'○'}</button></div><div class="hero-actions"><button class="whitebtn" onclick="toast('Wallet funding flow ready')">＋ Add Money</button><button class="whitebtn" onclick="go('withdraw')">↗ Withdraw</button></div></div><div class="section"><div class="sectionhead"><h2>Quick Services</h2><a onclick="go('transactions')">History</a></div><div class="grid"><button class="service" onclick="go('data')"><span>📡</span><b>Data Center</b></button><button class="service" onclick="go('airtime')"><span>📱</span><b>Airtime</b></button><button class="service" onclick="go('wallet')"><span>👛</span><b>Wallet</b></button><button class="service" onclick="go('shares')"><span>📈</span><b>Shares</b></button><button class="service" onclick="go('withdraw')"><span>💸</span><b>Withdrawal</b></button>${privilegedServices()}<button class="service" onclick="go('support')"><span>🎧</span><b>Customer Care</b></button></div></div><div class="section"><div class="sectionhead"><h2>Company Services</h2><a onclick="go('about')">View</a></div><div class="notice">Data Connect combines data, airtime, wallet, shareholder and marketer services in one mobile experience.</div></div><div class="section"><div class="sectionhead"><h2>Company Status</h2><a onclick="go('about')">Details</a></div><div class="notice"><b>V12 Progress:</b> Customer services, shareholder packages, Section B marketer profile, dispenser workflow, SIC staff chat and customer care are included in this demo. Live wallet ledger, transaction integrity and provider refund handling are now wired in V12.</div></div><div class="section"><div class="sectionhead"><h2>Recent Transactions</h2><a onclick="go('transactions')">See all</a></div><div class="list"><div class="row"><div class="ico">📡</div><div class="rowmain"><b>Data Purchase</b><small>MTN · 1GB · Today</small></div><div class="amount negative">−₦1,350</div></div><div class="row"><div class="ico">💰</div><div class="rowmain"><b>Wallet Funding</b><small>Bank transfer · Yesterday</small></div><div class="amount positive">+₦5,000</div></div></div></div></section>${bottom('home')}</main>`}
+function home(){app.innerHTML=`<main class="shell"><section class="screen"><div class="top"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><div class="top-actions"><button class="iconbtn" onclick="go('notifications')" aria-label="Notifications">🔔 <sup>${state.notifications}</sup></button>${profilePictureButton()}</div></div><div class="hero"><div class="balance-head"><div class="eyebrow">Available Balance</div></div><div class="balance-row"><div class="balance">${balanceDisplay()}</div><button class="balance-eye" onclick="toggleBalance()" aria-label="${state.balanceVisible?'Hide balance':'Show balance'}" title="${state.balanceVisible?'Hide balance':'Show balance'}">${state.balanceVisible?'◉':'◌'}</button></div><div class="hero-actions"><button class="whitebtn" onclick="toast('Wallet funding flow ready')">＋ Add Money</button><button class="whitebtn" onclick="go('withdraw')">↗ Withdraw</button></div></div><div class="section"><div class="sectionhead"><h2>Quick Services</h2><a onclick="go('transactions')">History</a></div><div class="grid"><button class="service" onclick="go('data')"><span>📡</span><b>Data Center</b></button><button class="service" onclick="go('airtime')"><span>📱</span><b>Airtime</b></button><button class="service" onclick="go('wallet')"><span>👛</span><b>Wallet</b></button><button class="service" onclick="go('shares')"><span>📈</span><b>Shares</b></button><button class="service" onclick="go('withdraw')"><span>💸</span><b>Withdrawal</b></button>${privilegedServices()}<button class="service" onclick="go('support')"><span>🎧</span><b>Customer Care</b></button></div></div><div class="section"><div class="sectionhead"><h2>Company Services</h2><a onclick="go('about')">View</a></div><div class="notice">Data Connect combines data, airtime, wallet, shareholder and marketer services in one mobile experience.</div></div><div class="section"><div class="sectionhead"><h2>Company Status</h2><a onclick="go('about')">Details</a></div><div class="notice"><b>V12 Progress:</b> Customer services, shareholder packages, Section B marketer profile, dispenser workflow, SIC staff chat and customer care are included in this demo. Live wallet ledger, transaction integrity and provider refund handling are now wired in V12.</div></div><div class="section"><div class="sectionhead"><h2>Recent Transactions</h2><a onclick="go('transactions')">See all</a></div><div class="list"><div class="row"><div class="ico">📡</div><div class="rowmain"><b>Data Purchase</b><small>MTN · 1GB · Today</small></div><div class="amount negative">−₦1,350</div></div><div class="row"><div class="ico">💰</div><div class="rowmain"><b>Wallet Funding</b><small>Bank transfer · Yesterday</small></div><div class="amount positive">+₦5,000</div></div></div></div></section>${bottom('home')}</main>`}
 function data(){app.innerHTML=`<main class="shell"><section class="screen">${header('Data Center','Smart way to buy data')}<div class="hero"><div class="eyebrow">Wallet balance</div><div class="balance">${money(state.balance)}</div><div class="eyebrow">Choose a network</div></div><div class="cards">${networks.map((n,i)=>`<button class="option" onclick="state.network='${n}';go('plans')"><div class="bigico">${['🟡','🔴','🟢','🔵'][i]}</div><div><strong>${n}</strong><small>View available plans</small></div><div class="price">›</div></button>`).join('')}</div></section>${bottom('data')}</main>`}
 function planSelection(){app.innerHTML=`<main class="shell"><section class="screen">${header(state.network+' Data','Choose a plan')}<div class="pillbar"><span class="pill active">All Plans</span><span class="pill">Daily</span><span class="pill">Weekly</span><span class="pill">Monthly</span></div><div class="cards">${dataPlans[state.network].map((p,i)=>`<button class="option" onclick="state.plan=${i};go('recipient')"><div class="bigico">📦</div><div><strong>${p[0]}</strong><small>${p[2]} validity</small></div><div class="price">${p[1]}</div></button>`).join('')}</div></section></main>`}
 function recipient(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Recipient Number','Who should receive the data?')}<div class="form"><label class="label">Phone number</label><input id="phone" class="input" inputmode="numeric" maxlength="11" placeholder="08012345678" value="${state.phone}"><small class="sub">${state.network} · ${p[0]} · ${p[2]}</small><button class="primary full" onclick="state.phone=document.getElementById('phone').value;if(state.phone.length<10)return toast('Enter a valid phone number');go('summary')">Continue</button></div></section></main>`}
@@ -529,3 +538,31 @@ const DC_V13_8_1_API_MAP = {
   process:"/api/dispenser/process"
  }
 };
+
+
+/* DataConnect balance visibility sync
+ * Dashboard eye state is shared with the Data screen.
+ */
+(function () {
+  const KEY = "dataconnect_balance_hidden";
+  function isHidden() { return localStorage.getItem(KEY) === "1"; }
+  function maskValue(v) {
+    if (v == null) return v;
+    return "••••••••";
+  }
+  window.DataConnectBalanceVisibility = {
+    setHidden(hidden) {
+      localStorage.setItem(KEY, hidden ? "1" : "0");
+      document.dispatchEvent(new CustomEvent("dataconnect:balance-visibility", {
+        detail: { hidden: !!hidden }
+      }));
+    },
+    isHidden,
+    display(value) { return isHidden() ? maskValue(value) : value; }
+  };
+  document.addEventListener("DOMContentLoaded", function () {
+    document.dispatchEvent(new CustomEvent("dataconnect:balance-visibility", {
+      detail: { hidden: isHidden() }
+    }));
+  });
+})();
