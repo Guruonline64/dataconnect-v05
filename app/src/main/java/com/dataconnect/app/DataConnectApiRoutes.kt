@@ -3,6 +3,7 @@ package com.dataconnect.app
 /** Backend V2.0.5 API route registry. */
 object DataConnectApiRoutes {
     const val HEALTH = "/api/health"
+    const val DASHBOARD = "/api/v2/wallet"
     const val REGISTER = "/api/v2/auth/register"
     const val LOGIN = "/api/v2/auth/login"
     const val LOGOUT = "/api/v2/auth/logout"
@@ -14,9 +15,11 @@ object DataConnectApiRoutes {
     const val PURCHASE_DATA = "/api/v2/data/purchase"
     const val AIRTIME_PURCHASE = "/api/v2/airtime/purchase"
     const val ORDERS = "/api/v2/orders"
+    const val AIRTIME_REQUESTS = "/api/v2/orders"
     const val SHARES = "/api/v2/shares"
     const val BUY_SHARE = "/api/v2/shares/purchase"
     const val HOLDINGS = "/api/v2/shares/portfolio"
+    const val SHARE_RETURNS = "/api/v2/shares/portfolio"
     const val WITHDRAWALS = "/api/v2/withdrawals"
     const val NOTIFICATIONS = "/api/v2/notifications"
     const val APP_VERSION = "/api/v2/app/version"

@@ -4,12 +4,12 @@ import org.json.JSONObject
 
 object DataConnectApiService {
     fun login(phone: String, password: String) =
-        DataConnectApiClient.request("/api/login.php", "POST",
-            JSONObject().put("phone", phone).put("password", password))
+        DataConnectApiClient.request(DataConnectApiRoutes.LOGIN, "POST",
+            JSONObject().put("email", phone).put("password", password))
 
     fun register(phone: String, username: String, password: String) =
-        DataConnectApiClient.request("/api/register.php", "POST",
-            JSONObject().put("phone", phone).put("username", username).put("password", password))
+        DataConnectApiClient.request(DataConnectApiRoutes.REGISTER, "POST",
+            JSONObject().put("phone", phone).put("name", username).put("email", phone).put("password", password).put("password_confirmation", password))
 
     fun dashboard() = DataConnectApiClient.request(DataConnectApiRoutes.DASHBOARD)
     fun dataPlans() = DataConnectApiClient.request(DataConnectApiRoutes.DATA_PLANS)
