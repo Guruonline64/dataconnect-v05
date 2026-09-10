@@ -210,3 +210,73 @@ body.dark .auth .policy,
   color:#aab6c8;
   border-color:#293852;
 }
+
+
+/* V14.2.9 — Data Center network + plan experience */
+.data-center-screen,.data-plans-screen{padding-bottom:88px}
+.dc-promo{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;padding:17px 16px;border-radius:20px;background:linear-gradient(135deg,#075bea,#1978ff);color:#fff;box-shadow:0 14px 32px rgba(7,91,234,.2)}
+.dc-promo b{display:block;font-size:14px}.dc-promo small{display:block;margin-top:5px;font-size:10px;opacity:.86}.dc-promo>span{font-size:30px}
+.dc-number-card{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);margin-bottom:20px}.dc-number-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#edf5ff;font-size:19px}.dc-number-card>div:nth-child(2){flex:1}.dc-number-card small{display:block;color:var(--muted);font-size:10px}.dc-number-card b{display:block;margin-top:4px;font-size:13px}.dc-number-card>span{font-size:23px;color:var(--muted)}
+.dc-section-title{margin:4px 0 12px}.dc-section-title h2{font-size:18px;margin:0}.dc-section-title p{font-size:11px;color:var(--muted);margin:4px 0 0}
+.network-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.network-card{min-height:94px;padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);display:flex;align-items:center;gap:10px;text-align:left;box-shadow:var(--shadow);transition:.18s}.network-card:active{transform:scale(.98)}.network-card-text{min-width:0;flex:1}.network-card-text b{display:block;font-size:13px}.network-card-text small{display:block;color:var(--muted);font-size:9px;margin-top:4px}.network-arrow{font-size:21px;color:var(--muted)}
+.network-mark{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;font-size:12px;font-weight:950;letter-spacing:-.4px;border:2px solid rgba(255,255,255,.65);box-shadow:0 5px 12px rgba(0,0,0,.1)}.network-mark.mtn{background:#ffd21a;color:#111}.network-mark.airtel{background:#e51d2a;color:#fff}.network-mark.glo{background:#69b52e;color:#fff}.network-mark.nmobile{background:#09a66a;color:#fff}
+.dc-info{display:flex;gap:10px;align-items:center;margin-top:16px;padding:12px 13px;border-radius:15px;background:var(--soft,#f5f8fd);border:1px solid var(--line)}.dc-info>span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#e8f7ef;color:#13a765;font-weight:900}.dc-info b{display:block;font-size:11px}.dc-info small{display:block;margin-top:2px;color:var(--muted);font-size:9px}
+.plan-network-row{display:flex;align-items:center;gap:11px;padding:13px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);margin:14px 0}.plan-network-row>div{flex:1}.plan-network-row b{display:block;font-size:14px}.plan-network-row small{display:block;color:var(--muted);font-size:10px;margin-top:3px}.change-network{border:0;background:#edf5ff;color:var(--blue);font-size:10px;font-weight:800;border-radius:10px;padding:8px 10px}
+.dc-phone-field{margin:14px 0}.dc-phone-field label{display:block;font-size:11px;font-weight:750;color:var(--muted);margin-bottom:6px}.phone-entry{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:0 13px}.phone-entry>span{font-size:12px;font-weight:800;color:var(--muted);border-right:1px solid var(--line);padding-right:9px}.phone-entry input{border:0;outline:0;background:transparent;color:var(--ink);width:100%;padding:13px 0;font-size:13px}
+.plan-tabs{display:flex;gap:20px;overflow-x:auto;border-bottom:1px solid var(--line);margin:12px 0 14px}.plan-tabs button{border:0;background:transparent;color:var(--muted);padding:8px 1px 11px;font-size:11px;font-weight:750;white-space:nowrap;position:relative}.plan-tabs button.active{color:#10a66f}.plan-tabs button.active:after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:4px;background:#10a66f}
+.plan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.plan-card{min-height:154px;border:1px solid var(--line);border-radius:17px;background:var(--card);color:var(--ink);padding:14px;text-align:left;display:flex;flex-direction:column;box-shadow:var(--shadow);transition:.18s}.plan-card:active{transform:scale(.98)}.plan-size{font-size:18px;line-height:1.1}.plan-validity{font-size:10px;color:var(--muted);margin-top:6px}.plan-price{font-size:16px;margin-top:auto}.plan-buy{display:block;margin-top:8px;color:#0aa873;font-size:9px;font-weight:800}
+body.dc-dark .dc-number-icon,body.dc-dark .change-network{background:#1a3456;color:#9ac5ff}.dc-dark .dc-info{--soft:#112238;background:#112238}.dc-dark .phone-entry{background:#142033;border-color:#2b3d58}.dc-dark .phone-entry input{color:#f3f7ff}.dc-dark .network-card,.dc-dark .plan-card,.dc-dark .plan-network-row,.dc-dark .dc-number-card{background:#142033;border-color:#293b56;color:#edf4ff}.dc-dark .dc-promo{box-shadow:0 14px 32px rgba(0,0,0,.3)}
+@media(max-width:360px){.network-grid,.plan-grid{grid-template-columns:1fr}.plan-card{min-height:135px}}
+
+
+/* V14.3.0 — Transaction PIN UI */
+.transaction-pin-card {
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid var(--input-border, #d9e2ef);
+  border-radius: 14px;
+  background: var(--card-bg, #fff);
+}
+.transaction-pin-card .pin-title {
+  font-weight: 800;
+  font-size: 14px;
+}
+.transaction-pin-card .pin-subtitle {
+  margin-top: 4px;
+  color: var(--muted, #667085);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.transaction-pin-card .pin-status {
+  margin-top: 9px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.transaction-pin-actions {
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+  flex-wrap:wrap;
+}
+.transaction-pin-actions button {
+  border:0;
+  border-radius:10px;
+  padding:10px 13px;
+  font-weight:700;
+  cursor:pointer;
+}
+body.dark .transaction-pin-card,
+.dark .transaction-pin-card {
+  background:#111d30;
+  border-color:#293852;
+  color:#eef4ff;
+}
+body.dark .transaction-pin-card .pin-subtitle,
+.dark .transaction-pin-card .pin-subtitle {
+  color:#aab6c8;
+}
+.pin-input {
+  letter-spacing:.35em;
+  text-align:center;
+  font-weight:800;
+}

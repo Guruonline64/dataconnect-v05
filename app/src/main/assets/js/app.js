@@ -106,8 +106,9 @@ function canSeeStaff(){return hasRole('staff','sic','staff/sic')}
 function canSeeDispenser(){return hasRole('dispenser','data dispenser')}
 function privilegedServices(){let x='';if(canSeeMarketer())x+=`<button class="service" onclick="go('marketer')"><span>🪪</span><b>Marketer</b></button>`;if(canSeeStaff())x+=`<button class="service" onclick="go('staff')"><span>🛡️</span><b>SIC / Staff</b></button>`;if(canSeeDispenser())x+=`<button class="service" onclick="go('dispenser')"><span>🧾</span><b>Dispenser</b></button>`;return x}
 function home(){app.innerHTML=`<main class="shell"><section class="screen"><div class="top"><div class="brand">${logo()}<div><strong>DATA CONNECT</strong><small>Smart Way to Buy Data</small></div></div><div class="top-actions"><button class="iconbtn" onclick="go('notifications')" aria-label="Notifications">🔔 <sup>${state.notifications}</sup></button>${profilePictureButton()}</div></div><div class="hero"><div class="balance-head"><div class="eyebrow">Available Balance</div></div><div class="balance-row"><div class="balance">${balanceDisplay()}</div><button class="balance-eye" onclick="toggleBalance()" aria-label="${state.balanceVisible?'Hide balance':'Show balance'}" title="${state.balanceVisible?'Hide balance':'Show balance'}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.2 12s3.6-6 9.8-6 9.8 6 9.8 6-3.6 6-9.8 6-9.8-6-9.8-6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.8" stroke="currentColor" stroke-width="1.8"/>${state.balanceVisible?'':'<path d="M4 4l16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'}</svg></button></div><div class="hero-actions"><button class="whitebtn" onclick="toast('Wallet funding flow ready')">＋ Add Money</button><button class="whitebtn" onclick="go('withdraw')">↗ Withdraw</button></div></div><div class="section"><div class="sectionhead"><h2>Quick Services</h2><a onclick="go('transactions')">History</a></div><div class="grid"><button class="service" onclick="go('data')"><span>📡</span><b>Data Center</b></button><button class="service" onclick="go('airtime')"><span>📱</span><b>Airtime</b></button><button class="service" onclick="go('wallet')"><span>👛</span><b>Wallet</b></button><button class="service" onclick="go('shares')"><span>📈</span><b>Shares</b></button><button class="service" onclick="go('withdraw')"><span>💸</span><b>Withdrawal</b></button>${privilegedServices()}<button class="service" onclick="go('support')"><span>🎧</span><b>Customer Care</b></button></div></div><div class="section"><div class="sectionhead"><h2>Company Services</h2><a onclick="go('about')">View</a></div><div class="notice">Data Connect combines data, airtime, wallet, shareholder and marketer services in one mobile experience.</div></div><div class="section"><div class="sectionhead"><h2>Company Status</h2><a onclick="go('about')">Details</a></div><div class="notice"><b>V12 Progress:</b> Customer services, shareholder packages, Section B marketer profile, dispenser workflow, SIC staff chat and customer care are included in this demo. Live wallet ledger, transaction integrity and provider refund handling are now wired in V12.</div></div><div class="section"><div class="sectionhead"><h2>Recent Transactions</h2><a onclick="go('transactions')">See all</a></div><div class="list"><div class="row"><div class="ico">📡</div><div class="rowmain"><b>Data Purchase</b><small>MTN · 1GB · Today</small></div><div class="amount negative">−₦1,350</div></div><div class="row"><div class="ico">💰</div><div class="rowmain"><b>Wallet Funding</b><small>Bank transfer · Yesterday</small></div><div class="amount positive">+₦5,000</div></div></div></div></section>${bottom('home')}</main>`}
-function data(){app.innerHTML=`<main class="shell"><section class="screen">${header('Data Center','Smart way to buy data')}<div class="hero"><div class="eyebrow">Wallet balance</div><div class="balance">${money(state.balance)}</div><div class="eyebrow">Choose a network</div></div><div class="cards">${networks.map((n,i)=>`<button class="option" onclick="state.network='${n}';go('plans')"><div class="bigico">${['🟡','🔴','🟢','🔵'][i]}</div><div><strong>${n}</strong><small>View available plans</small></div><div class="price">›</div></button>`).join('')}</div></section>${bottom('data')}</main>`}
-function planSelection(){app.innerHTML=`<main class="shell"><section class="screen">${header(state.network+' Data','Choose a plan')}<div class="pillbar"><span class="pill active">All Plans</span><span class="pill">Daily</span><span class="pill">Weekly</span><span class="pill">Monthly</span></div><div class="cards">${dataPlans[state.network].map((p,i)=>`<button class="option" onclick="state.plan=${i};go('recipient')"><div class="bigico">📦</div><div><strong>${p[0]}</strong><small>${p[2]} validity</small></div><div class="price">${p[1]}</div></button>`).join('')}</div></section></main>`}
+function networkMark(n){const cls=String(n).toLowerCase().replace(/[^a-z0-9]/g,'');return `<span class="network-mark ${cls}">${n==='9mobile'?'9M':n.slice(0,1)}</span>`}
+function data(){app.innerHTML=`<main class="shell"><section class="screen data-center-screen">${header('Mobile Data','Buy affordable data plans')}<div class="dc-promo"><div><b>Stay connected with Data Connect</b><small>Choose a network to view available data plans.</small></div><span>📡</span></div><div class="dc-number-card"><div class="dc-number-icon">📱</div><div><small>Recipient number</small><b>${state.phone||'Enter number on the next step'}</b></div><span>›</span></div><div class="dc-section-title"><div><h2>Choose Network</h2><p>Select your mobile network</p></div></div><div class="network-grid">${networks.map(n=>`<button class="network-card" onclick="state.network='${n}';state.plan=null;go('planSelection')">${networkMark(n)}<span class="network-card-text"><b>${n}</b><small>View data plans</small></span><span class="network-arrow">›</span></button>`).join('')}</div><div class="dc-info"><span>✓</span><div><b>Fast & secure</b><small>Plans and prices are shown before you confirm a purchase.</small></div></div></section>${bottom('data')}</main>`}
+function planSelection(){const plans=dataPlans[state.network]||[];app.innerHTML=`<main class="shell"><section class="screen data-plans-screen">${header(state.network+' Data','Choose your preferred plan')}<div class="plan-network-row">${networkMark(state.network)}<div><b>${state.network}</b><small>Available data plans</small></div><button class="change-network" onclick="go('data')">Change</button></div><div class="dc-phone-field"><label>Mobile number</label><div class="phone-entry"><span>+234</span><input id="dataRecipient" inputmode="numeric" maxlength="11" placeholder="08012345678" value="${esc(state.phone)}"></div></div><div class="plan-tabs"><button class="active" type="button">HOT</button><button type="button">Daily</button><button type="button">Weekly</button><button type="button">Monthly</button></div><div class="plan-grid">${plans.map((p,i)=>`<button class="plan-card" onclick="state.phone=document.getElementById('dataRecipient').value.trim();if(state.phone.length<10)return toast('Enter a valid phone number');state.plan=${i};go('recipient')"><b class="plan-size">${p[0]}</b><span class="plan-validity">${p[2]}</span><strong class="plan-price">${p[1]}</strong><span class="plan-buy">Select plan</span></button>`).join('')}</div></section></main>`}
 function recipient(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Recipient Number','Who should receive the data?')}<div class="form"><label class="label">Phone number</label><input id="phone" class="input" inputmode="numeric" maxlength="11" placeholder="08012345678" value="${state.phone}"><small class="sub">${state.network} · ${p[0]} · ${p[2]}</small><button class="primary full" onclick="state.phone=document.getElementById('phone').value;if(state.phone.length<10)return toast('Enter a valid phone number');go('summary')">Continue</button></div></section></main>`}
 function summary(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Order Summary','Review before purchase')}<div class="summary"><div class="sumrow"><span>Network</span><b>${state.network}</b></div><div class="sumrow"><span>Data plan</span><b>${p[0]}</b></div><div class="sumrow"><span>Recipient</span><b>${state.phone}</b></div><div class="sumrow"><span>Validity</span><b>${p[2]}</b></div><div class="sumrow"><span>Wallet balance</span><b>${money(state.balance)}</b></div><div class="sumrow total"><span>Total</span><b>${p[1]}</b></div></div><button class="primary full" onclick="go('confirm')">Continue to Confirm</button><button class="ghost full" onclick="go('recipient')">Edit</button></section></main>`}
 function confirm(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Confirm Purchase','Secure transaction')}<div class="state"><div class="stateico">🔐</div><h2>Confirm purchase?</h2><p class="sub">${p[0]} ${state.network} data for <b>${state.phone}</b> at <b>${p[1]}</b>.</p><button class="primary full" onclick="submitDataPurchase()">Confirm Purchase</button><button class="ghost full" onclick="go('summary')">Cancel</button></div></section></main>`}
@@ -538,3 +539,50 @@ const DC_V13_8_1_API_MAP = {
   process:"/api/dispenser/process"
  }
 };
+
+
+/* DataConnect V14.3.0 — Transaction PIN */
+(function () {
+  const KEY = "dataconnect_transaction_pin_enabled";
+  const API = window.DataConnectApi || window.api || null;
+
+  window.DataConnectTransactionPin = {
+    isEnabled() {
+      return localStorage.getItem(KEY) === "true";
+    },
+    setEnabled(value) {
+      localStorage.setItem(KEY, value ? "true" : "false");
+    },
+    async verify(pin) {
+      if (!/^\d{4}$/.test(String(pin || ""))) return false;
+      try {
+        if (API && typeof API.verifyTransactionPin === "function") {
+          return !!(await API.verifyTransactionPin(pin));
+        }
+      } catch (_) {}
+      return false;
+    },
+    async setup(pin, confirmPin) {
+      if (!/^\d{4}$/.test(String(pin || "")) || String(pin) !== String(confirmPin || "")) {
+        return { ok:false, error:"PIN must be exactly 4 digits and both entries must match." };
+      }
+      try {
+        if (API && typeof API.setTransactionPin === "function") {
+          const result = await API.setTransactionPin(pin);
+          if (result && result.ok === false) return result;
+        }
+      } catch (_) {
+        return { ok:false, error:"Unable to save Transaction PIN." };
+      }
+      this.setEnabled(true);
+      return { ok:true };
+    },
+    async change(oldPin, newPin, confirmPin) {
+      if (!(await this.verify(oldPin))) return { ok:false, error:"Current Transaction PIN is incorrect." };
+      return this.setup(newPin, confirmPin);
+    },
+    disable() {
+      this.setEnabled(false);
+    }
+  };
+})();

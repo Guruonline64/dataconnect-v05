@@ -56,3 +56,50 @@ window.DC_API = {
   async buyShare(share_id,units){ return this.request("/api/v2/shares/purchase",{method:"POST",body:JSON.stringify({share_id,units:Number(units)})}); },
   logout(){ this.token=""; localStorage.removeItem("dc_auth_token"); localStorage.removeItem("data_connect_token"); }
 };
+
+
+/* DataConnect V14.3.0 — Transaction PIN */
+(function () {
+  const KEY = "dataconnect_transaction_pin_enabled";
+  const API = window.DataConnectApi || window.api || null;
+
+  window.DataConnectTransactionPin = {
+    isEnabled() {
+      return localStorage.getItem(KEY) === "true";
+    },
+    setEnabled(value) {
+      localStorage.setItem(KEY, value ? "true" : "false");
+    },
+    async verify(pin) {
+      if (!/^\d{4}$/.test(String(pin || ""))) return false;
+      try {
+        if (API && typeof API.verifyTransactionPin === "function") {
+          return !!(await API.verifyTransactionPin(pin));
+        }
+      } catch (_) {}
+      return false;
+    },
+    async setup(pin, confirmPin) {
+      if (!/^\d{4}$/.test(String(pin || "")) || String(pin) !== String(confirmPin || "")) {
+        return { ok:false, error:"PIN must be exactly 4 digits and both entries must match." };
+      }
+      try {
+        if (API && typeof API.setTransactionPin === "function") {
+          const result = await API.setTransactionPin(pin);
+          if (result && result.ok === false) return result;
+        }
+      } catch (_) {
+        return { ok:false, error:"Unable to save Transaction PIN." };
+      }
+      this.setEnabled(true);
+      return { ok:true };
+    },
+    async change(oldPin, newPin, confirmPin) {
+      if (!(await this.verify(oldPin))) return { ok:false, error:"Current Transaction PIN is incorrect." };
+      return this.setup(newPin, confirmPin);
+    },
+    disable() {
+      this.setEnabled(false);
+    }
+  };
+})();
