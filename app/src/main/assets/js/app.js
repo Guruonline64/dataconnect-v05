@@ -1,6 +1,7 @@
 const app=document.getElementById('app');
+window.AndroidNavigation={exitApp:function(){try{if(typeof AndroidNavigationNative!=='undefined'&&AndroidNavigationNative.exitApp)AndroidNavigationNative.exitApp();else if(typeof AndroidBiometric!=='undefined'&&AndroidBiometric.exitApp)AndroidBiometric.exitApp()}catch(e){}}};
 const saved=JSON.parse(localStorage.getItem('dc_v07_state')||'null');
-const state=Object.assign({page:'login',network:'MTN',plan:null,phone:'',balance:25450,balanceVisible:true,user:'',role:'Customer',loggedIn:false,notifications:3,shareholder:false,marketerApproved:false,staffOnline:true,airtimeRequests:[],orders:[]},saved||{});
+const state=Object.assign({page:'login',history:[],network:'MTN',plan:null,phone:'',balance:25450,balanceVisible:true,user:'',role:'Customer',loggedIn:false,notifications:3,shareholder:false,marketerApproved:false,staffOnline:true,airtimeRequests:[],orders:[]},saved||{});
 function save(){localStorage.setItem('dc_v07_state',JSON.stringify(state))} function toggleBalance(){state.balanceVisible=!state.balanceVisible;save();go('home')} function balanceDisplay(){return state.balanceVisible?money(state.balance):'₦ ••••••••'} function togglePassword(){const input=document.getElementById('loginPassword');const btn=document.getElementById('togglePasswordBtn');if(!input||!btn)return;const showing=input.type==='text';input.type=showing?'password':'text';btn.textContent=showing?'Show':'Hide';btn.setAttribute('aria-label',showing?'Show password':'Hide password')}
 const networks=['MTN','Airtel','Glo','9mobile'];
 const dataPlans={MTN:[['500MB','₦700','7 days'],['1GB','₦1,350','30 days'],['2GB','₦2,700','30 days'],['3GB','₦4,050','30 days'],['5GB','₦6,750','30 days']],Airtel:[['500MB','₦700','7 days'],['1GB','₦1,350','30 days'],['2GB','₦2,700','30 days'],['3GB','₦4,050','30 days'],['5GB','₦6,750','30 days']],Glo:[['500MB','₦650','7 days'],['1GB','₦1,300','30 days'],['2GB','₦2,600','30 days'],['3GB','₦3,900','30 days'],['5GB','₦6,500','30 days']],['9mobile']:[['500MB','₦700','7 days'],['1GB','₦1,300','30 days'],['2GB','₦2,600','30 days'],['3GB','₦3,900','30 days'],['5GB','₦6,500','30 days']]};
@@ -11,7 +12,7 @@ function toast(t){const x=document.createElement('div');x.className='toast';x.te
 function logo(){return `<div class="logo">DC</div>`}
 function profileInitials(){const n=String(state.user||'Data Connect User').trim();return n.split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'DC'}
 function profilePictureButton(){return `<button class="profile-picture-btn" onclick="go('account')" aria-label="Open profile" title="Profile">${state.profilePicture?`<img src="${esc(state.profilePicture)}" alt="Profile picture">`:`<span>${esc(profileInitials())}</span>`}</button>`}
-function header(title,sub=''){return `<div class="back"><button onclick="go('home')">←</button><div><b>${title}</b>${sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${sub}</div>`:''}</div></div>`}
+function header(title,sub=''){return `<div class="back"><button onclick="back()" aria-label="Go back">←</button><div><b>${title}</b>${sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${sub}</div>`:''}</div></div>`}
 function bottom(active='home'){return `<div class="bottom"><button class="nav ${active==='home'?'active':''}" onclick="go('home')"><i>⌂</i>Home</button><button class="nav ${active==='data'?'active':''}" onclick="go('data')"><i>◉</i>Data</button><button class="nav ${active==='airtime'?'active':''}" onclick="go('airtime')"><i>▣</i>Airtime</button><button class="nav ${active==='wallet'?'active':''}" onclick="go('wallet')"><i>▱</i>Wallet</button><button class="nav ${active==='account'?'active':''}" onclick="go('account')"><i>●</i>Account</button></div>`}
 function showScreenLoader(message='Loading...'){
   let e=document.getElementById('dc-screen-loader');
@@ -24,7 +25,22 @@ function showScreenLoader(message='Loading...'){
   requestAnimationFrame(()=>e.classList.add('show'));
 }
 function hideScreenLoader(){const e=document.getElementById('dc-screen-loader');if(!e)return;e.classList.remove('show');setTimeout(()=>e.remove(),180)}
-function go(p){state.page=p;save();showScreenLoader('Loading '+(p==='home'?'dashboard':p.replace(/[-_]/g,' '))+'...');setTimeout(()=>{render();setTimeout(hideScreenLoader,120)},180)}
+function go(p, options={}){
+  if(!options.fromBack && state.page!==p){state.history=Array.isArray(state.history)?state.history:[];state.history.push(state.page)}
+  state.page=p;save();showScreenLoader('Loading '+(p==='home'?'dashboard':p.replace(/[-_]/g,' '))+'...');setTimeout(()=>{render();setTimeout(hideScreenLoader,120)},180)
+}
+function back(){
+  state.history=Array.isArray(state.history)?state.history:[];
+  while(state.history.length){
+    const previous=state.history.pop();
+    if(previous && previous!==state.page){save();return go(previous,{fromBack:true});}
+  }
+  if(state.page!=='home' && state.loggedIn)return go('home',{fromBack:true});
+  if(['signup'].includes(state.page))return go('login',{fromBack:true});
+  try{if(typeof AndroidNavigation!=='undefined'&&AndroidNavigation.exitApp)AndroidNavigation.exitApp()}catch(e){}
+  return false;
+}
+window.handleNativeBack=back;
 function biometricAvailable(){try{return typeof AndroidBiometric!=='undefined'&&AndroidBiometric.isAvailable()}catch(e){return false}}
 function biometricEnabled(){try{return biometricAvailable()&&AndroidBiometric.isEnabled()}catch(e){return false}}
 function enableBiometricAfterLogin(token){try{if(token&&biometricAvailable()&&!biometricEnabled()){window.onNativeBiometricEnabled=function(ok){if(ok)toast('Fingerprint login enabled');};AndroidBiometric.enable(token)}}catch(e){}}
@@ -41,12 +57,72 @@ function auth(){
   </div><div class="switch">${signup?'Already have an account?':'New to Data Connect?'} <b onclick="go('${signup?'login':'signup'}')">${signup?'Login':'Create account'}</b></div></div></section></main>`
 }
 function toggleConfirmPassword(){const input=document.getElementById('confirmPassword');const btn=document.querySelector('.password-toggle-inline');if(!input||!btn)return;const showing=input.type==='text';input.type=showing?'password':'text';btn.textContent=showing?'Show':'Hide'}
-async function submitDataPurchase(){
+async function dcPinHash(pin){
+  const data=new TextEncoder().encode(String(pin));
+  const digest=await crypto.subtle.digest('SHA-256',data);
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function transactionPinSet(){return localStorage.getItem('dc_transaction_pin_hash')||localStorage.getItem('dc_transaction_pin_enabled')==='true'}
+async function setTransactionPinLocal(pin){localStorage.setItem('dc_transaction_pin_hash',await dcPinHash(pin));localStorage.removeItem('dc_transaction_pin_enabled')}
+async function verifyTransactionPinLocal(pin){const h=localStorage.getItem('dc_transaction_pin_hash');return !!h && h===(await dcPinHash(pin))}
+function transactionPinRequired(){return state.loggedIn}
+function transactionPinScreen(){
+  const action=state.pinAction||'purchase';
+  const title=action==='withdraw'?'Authorize Withdrawal':action==='share'?'Authorize Share Purchase':'Authorize Transaction';
+  const amount=state.pinAmount||'';
+  app.innerHTML=`<main class="shell"><section class="screen">${header(title,'Enter your 4-digit Transaction PIN')}<div class="state"><div class="stateico">🔐</div><h2>Confirm with Transaction PIN</h2><p class="sub">For your security, enter your 4-digit Transaction PIN to authorize this transaction${amount?` of <b>${esc(amount)}</b>`:''}.</p><div class="form"><label class="label">Transaction PIN</label><input id="transactionPinInput" class="input pin-input" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="one-time-code" placeholder="••••" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)"><div id="transactionPinError" class="sub" style="min-height:18px;color:#d64545;margin-top:7px"></div><button class="primary full" onclick="authorizeTransactionPin()">Authorize</button><button class="ghost full" onclick="back()">Cancel</button></div></div></section></main>`
+}
+async function authorizeTransactionPin(){
+  const input=document.getElementById('transactionPinInput');const pin=input?.value||'';const err=document.getElementById('transactionPinError');
+  if(!/^\d{4}$/.test(pin)){if(err)err.textContent='Enter exactly 4 digits.';return}
+  try{
+    let ok=false;
+    if(DC_API.base()&&DC_API.token&&typeof DC_API.verifyTransactionPin==='function') ok=await DC_API.verifyTransactionPin(pin);
+    else ok=await verifyTransactionPinLocal(pin);
+    if(!ok){if(err)err.textContent='Incorrect Transaction PIN.';return}
+    if(state.pinAction==='purchase') return submitDataPurchase(true,pin);
+    if(state.pinAction==='airtime') return submitAirtime(true,pin);
+    if(state.pinAction==='share') return buyShareNow(state.pinShareId,true,pin);
+    if(state.pinAction==='withdraw') return submitWithdrawal(true,pin);
+  }catch(e){if(err)err.textContent=e.message||'Unable to verify Transaction PIN.'}
+}
+async function setupTransactionPin(){
+  const pin=prompt('Create your 4-digit Transaction PIN:');if(pin===null)return;
+  const confirmPin=prompt('Confirm your 4-digit Transaction PIN:');if(confirmPin===null)return;
+  if(!/^\d{4}$/.test(pin)||pin!==confirmPin)return toast('Transaction PIN must be exactly 4 matching digits');
+  try{
+    if(DC_API.base()&&DC_API.token&&typeof DC_API.setTransactionPin==='function') await DC_API.setTransactionPin(pin,confirmPin);
+    await setTransactionPinLocal(pin);toast('Transaction PIN enabled');return go('account');
+  }catch(e){toast(e.message||'Unable to set Transaction PIN')}
+}
+async function changeTransactionPin(){
+  if(!transactionPinSet())return setupTransactionPin();
+  const oldPin=prompt('Enter your current 4-digit Transaction PIN:');if(oldPin===null)return;
+  if(!/^\d{4}$/.test(oldPin))return toast('Enter exactly 4 digits');
+  let ok=await verifyTransactionPinLocal(oldPin);
+  try{if(!ok&&DC_API.base()&&DC_API.token&&typeof DC_API.verifyTransactionPin==='function')ok=await DC_API.verifyTransactionPin(oldPin)}catch(e){}
+  if(!ok)return toast('Current Transaction PIN is incorrect');
+  const next=prompt('Enter your new 4-digit Transaction PIN:');if(next===null)return;
+  const confirmPin=prompt('Confirm your new 4-digit Transaction PIN:');if(confirmPin===null)return;
+  if(!/^\d{4}$/.test(next)||next!==confirmPin)return toast('Transaction PIN must be exactly 4 matching digits');
+  try{if(DC_API.base()&&DC_API.token&&typeof DC_API.setTransactionPin==='function')await DC_API.setTransactionPin(next,confirmPin);await setTransactionPinLocal(next);toast('Transaction PIN changed');go('account')}catch(e){toast(e.message||'Unable to change Transaction PIN')}
+}
+function disableTransactionPin(){
+  if(!confirm('Disable Transaction PIN authorization?'))return;
+  localStorage.removeItem('dc_transaction_pin_hash');localStorage.removeItem('dc_transaction_pin_enabled');toast('Transaction PIN disabled');go('account');
+}
+function requireTransactionPin(action, extra={}){
+  state.pinAction=action;Object.assign(state,extra);save();
+  if(!transactionPinSet())return toast('Set your Transaction PIN first in Account → Security');
+  return go('transactionPin');
+}
+async function submitDataPurchase(pinAuthorized=false,pin=''){
+  if(!pinAuthorized)return requireTransactionPin('purchase');
   const p=dataPlans[state.network][state.plan??1];
   if(!state.phone || state.phone.length<10) return toast('Enter a valid recipient number');
   try {
     if(DC_API.base() && (DC_API.token || localStorage.getItem('dc_auth_token') || localStorage.getItem('data_connect_token'))){
-      const result=await DC_API.purchaseData(state.network,p[0],Number(p[1].replace(/[^0-9.]/g,'')),state.phone);
+      const result=await DC_API.purchaseData(state.network,p[0],Number(p[1].replace(/[^0-9.]/g,'')),state.phone,pin);
       state.lastOrder=result;
       await refreshBackendData();
       save();
@@ -111,7 +187,7 @@ function data(){app.innerHTML=`<main class="shell"><section class="screen data-c
 function planSelection(){const plans=dataPlans[state.network]||[];app.innerHTML=`<main class="shell"><section class="screen data-plans-screen">${header(state.network+' Data','Choose your preferred plan')}<div class="plan-network-row">${networkMark(state.network)}<div><b>${state.network}</b><small>Available data plans</small></div><button class="change-network" onclick="go('data')">Change</button></div><div class="dc-phone-field"><label>Mobile number</label><div class="phone-entry"><span>+234</span><input id="dataRecipient" inputmode="numeric" maxlength="11" placeholder="08012345678" value="${esc(state.phone)}"></div></div><div class="plan-tabs"><button class="active" type="button">HOT</button><button type="button">Daily</button><button type="button">Weekly</button><button type="button">Monthly</button></div><div class="plan-grid">${plans.map((p,i)=>`<button class="plan-card" onclick="state.phone=document.getElementById('dataRecipient').value.trim();if(state.phone.length<10)return toast('Enter a valid phone number');state.plan=${i};go('recipient')"><b class="plan-size">${p[0]}</b><span class="plan-validity">${p[2]}</span><strong class="plan-price">${p[1]}</strong><span class="plan-buy">Select plan</span></button>`).join('')}</div></section></main>`}
 function recipient(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Recipient Number','Who should receive the data?')}<div class="form"><label class="label">Phone number</label><input id="phone" class="input" inputmode="numeric" maxlength="11" placeholder="08012345678" value="${state.phone}"><small class="sub">${state.network} · ${p[0]} · ${p[2]}</small><button class="primary full" onclick="state.phone=document.getElementById('phone').value;if(state.phone.length<10)return toast('Enter a valid phone number');go('summary')">Continue</button></div></section></main>`}
 function summary(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Order Summary','Review before purchase')}<div class="summary"><div class="sumrow"><span>Network</span><b>${state.network}</b></div><div class="sumrow"><span>Data plan</span><b>${p[0]}</b></div><div class="sumrow"><span>Recipient</span><b>${state.phone}</b></div><div class="sumrow"><span>Validity</span><b>${p[2]}</b></div><div class="sumrow"><span>Wallet balance</span><b>${money(state.balance)}</b></div><div class="sumrow total"><span>Total</span><b>${p[1]}</b></div></div><button class="primary full" onclick="go('confirm')">Continue to Confirm</button><button class="ghost full" onclick="go('recipient')">Edit</button></section></main>`}
-function confirm(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Confirm Purchase','Secure transaction')}<div class="state"><div class="stateico">🔐</div><h2>Confirm purchase?</h2><p class="sub">${p[0]} ${state.network} data for <b>${state.phone}</b> at <b>${p[1]}</b>.</p><button class="primary full" onclick="submitDataPurchase()">Confirm Purchase</button><button class="ghost full" onclick="go('summary')">Cancel</button></div></section></main>`}
+function confirm(){const p=dataPlans[state.network][state.plan??1];app.innerHTML=`<main class="shell"><section class="screen">${header('Confirm Purchase','Secure transaction')}<div class="state"><div class="stateico">🔐</div><h2>Confirm purchase?</h2><p class="sub">${p[0]} ${state.network} data for <b>${state.phone}</b> at <b>${p[1]}</b>.</p><button class="primary full" onclick="requireTransactionPin('purchase',{pinAmount:p[1]})">Confirm Purchase</button><button class="ghost full" onclick="go('summary')">Cancel</button></div></section></main>`}
 function pending(){app.innerHTML=`<main class="shell"><section class="screen"><div class="state"><div class="stateico pulse">📡</div><h2>Processing purchase</h2><p class="sub">Connecting to the Data Center service…</p><div class="summary"><div class="sumrow"><span>Reference</span><b>DC-${Date.now().toString().slice(-8)}</b></div><div class="sumrow"><span>Status</span><b>Processing</b></div></div></div></section></main>`}
 function success(){const p=dataPlans[state.network][state.plan??1];const o=state.lastOrder||{};app.innerHTML=`<main class="shell"><section class="screen"><div class="state"><div class="stateico">✓</div><h2>Transaction Successful</h2><p class="sub">${o.message||'Your transaction has been recorded successfully. Delivery status is shown below.'}</p><div class="summary"><div class="sumrow"><span>Amount</span><b>${p[1]}</b></div><div class="sumrow"><span>Network</span><b>${state.network}</b></div><div class="sumrow"><span>Recipient</span><b>${state.phone}</b></div><div class="sumrow"><span>Reference</span><b>${o.reference||('DC-'+Date.now().toString().slice(-8))}</b></div><div class="sumrow"><span>Status</span><b class="positive">${o.status||'Submitted'}</b></div></div><button class="primary full" onclick="go('notifications')">View Notification</button><button class="ghost full" onclick="go('home')">Done</button></div></section></main>`}
 function airtime(){const selectedNetwork=state.airNetwork||'MTN';const selectedAmount=state.airAmount||'₦500';app.innerHTML=`<main class="shell"><section class="screen">${header('Airtime','Fast and secure airtime purchase')}<div class="notice"><b>Dispenser approval:</b> Every airtime sale is submitted for manual review before the client is credited.</div><div class="form"><label class="label">Network</label>${customDropdown('airNetworkDropdown',selectedNetwork,networks.map((n,i)=>({value:n,label:n,icon:['🟡','🔴','🟢','🔵'][i]})),'selectAirtimeNetwork')}<label class="label airtime-label-gap">Recipient phone number</label><input id="airPhone" class="input" inputmode="numeric" maxlength="11" placeholder="08012345678"><label class="label airtime-label-gap">Amount</label>${customDropdown('airAmountDropdown',selectedAmount,['₦500','₦1,000','₦2,000','₦5,000','₦10,000'].map(v=>({value:v,label:v,icon:'₦'})),'selectAirtimeAmount')}<button class="primary full" onclick="submitAirtime()">Submit for Approval</button></div></section>${bottom('airtime')}</main>`}
@@ -120,7 +196,7 @@ function toggleDropdown(id){const target=document.getElementById(id);if(!target)
 function closeDropdowns(){document.querySelectorAll('.custom-select.open').forEach(x=>{x.classList.remove('open');x.querySelector('.select-trigger')?.setAttribute('aria-expanded','false')})}
 function selectAirtimeNetwork(value){state.airNetwork=value;save();closeDropdowns();airtime()}
 function selectAirtimeAmount(value){state.airAmount=value;save();closeDropdowns();airtime()}
-function submitAirtime(){const phone=document.getElementById('airPhone').value.trim();if(phone.length<10)return toast('Enter a valid phone number');state.airtimeRequests.push({network:state.airNetwork||'MTN',phone,amount:state.airAmount||'₦500',status:'Pending'});save();toast('Sent to dispenser');go('airtimePending')}
+function submitAirtime(pinAuthorized=false,pin=''){const phone=document.getElementById('airPhone')?.value.trim()||state.airPhone||'';if(phone.length<10)return toast('Enter a valid phone number');state.airPhone=phone;if(!pinAuthorized)return requireTransactionPin('airtime',{pinAmount:state.airAmount||'₦500'});state.airtimeRequests.push({network:state.airNetwork||'MTN',phone,amount:state.airAmount||'₦500',status:'Pending'});save();toast('Sent to dispenser');go('airtimePending')}
 function airtimePending(){app.innerHTML=`<main class="shell"><section class="screen">${header('Airtime Approval','Dispenser review')}<div class="state"><div class="stateico">⏳</div><h2>Awaiting dispenser approval</h2><p class="sub">Your airtime request is queued. A dispenser can review it from the staff console.</p><button class="primary full" onclick="go('dispenser')">Open Dispenser Console</button></div></section></main>`}
 function airtimeSuccess(){app.innerHTML=`<main class="shell"><section class="screen"><div class="state"><div class="stateico">✓</div><h2>Airtime Credited</h2><p class="sub">Data Connect has recorded the approved airtime credit. The client notification is generated automatically.</p><div class="notice">📩 <b>Client message:</b> Data Connect has credited your airtime amount. Your dispenser has completed the transaction.</div><button class="primary full" onclick="go('notifications')">View Notification</button></div></section></main>`}
 async function wallet(){await refreshBackendData();let tx=[];try{if(DC_API.base()&&DC_API.token)tx=(await DC_API.transactions()).transactions||[]}catch(e){}if(!tx.length)tx=state.walletTransactions||[];app.innerHTML=`<main class="shell"><section class="screen">${header('Wallet','Balance & transaction ledger')}<div class="hero"><div class="eyebrow">Available Balance</div><div class="balance">${money(state.balance)}</div><div class="hero-actions"><button class="whitebtn" onclick="fundWalletDemo()">＋ Add Money</button><button class="whitebtn" onclick="go('withdraw')">↗ Withdraw</button></div></div><div class="section"><div class="sectionhead"><h2>Recent wallet activity</h2><a onclick="go('transactions')">See all</a></div><div class="section list">${tx.length?tx.slice(0,6).map(txRow).join(''):`<div class="state"><div class="stateico">₦</div><h2>No transactions yet</h2><p class="sub">Your data, airtime, funding, earnings and withdrawal records will appear here.</p></div>`}</div></div></section>${bottom('wallet')}</main>`}
@@ -236,6 +312,8 @@ function account(){
       <div class="row" onclick="toast('Password change flow ready')"><div class="ico">🔑</div><div class="rowmain"><b>Change Password</b><small>Update your account password</small></div><b>›</b></div>
       <div class="row"><div class="ico">👆</div><div class="rowmain"><b>Fingerprint / Biometric Login</b><small>${biometricOn?'Enabled':'Enable secure fingerprint sign-in'}</small></div><button class="switch ${biometricOn?'on':''}" onclick="toggleBiometricSetting(event)"><span></span></button></div>
       <div class="row" onclick="toast('Security controls ready')"><div class="ico">🛡️</div><div class="rowmain"><b>Login & Security</b><small>Manage account security controls</small></div><b>›</b></div>
+      <div class="row" onclick="${transactionPinSet()?'changeTransactionPin()':'setupTransactionPin()'}"><div class="ico">🔢</div><div class="rowmain"><b>Transaction PIN</b><small>${transactionPinSet()?'Enabled · 4-digit PIN':'Set your 4-digit transaction PIN'}</small></div><b>›</b></div>
+      ${transactionPinSet()?`<div class="row" onclick="disableTransactionPin()"><div class="ico">🔒</div><div class="rowmain"><b>Disable Transaction PIN</b><small>Turn off transaction authorization</small></div><b>›</b></div>`:''}
     </div></div>
 
     <div class="section account-section"><h3>🔔 Notifications</h3><div class="list settings">
@@ -245,7 +323,7 @@ function account(){
 
     <div class="section account-section"><h3>⚙️ App Settings</h3><div class="list settings">
       <div class="row"><div class="ico">🌙</div><div class="rowmain"><b>Dark Mode</b><small>${darkOn?'Enabled':'Use the darker app appearance'}</small></div><button class="switch ${darkOn?'on':''}" onclick="toggleDarkMode(event)"><span></span></button></div>
-      <div class="row"><div class="ico">ℹ️</div><div class="rowmain"><b>App Version</b><small>V14.2.4</small></div><b>›</b></div>
+      <div class="row"><div class="ico">ℹ️</div><div class="rowmain"><b>App Version</b><small>V14.3.4</small></div><b>›</b></div>
       <div class="row" onclick="toast('App update check ready')"><div class="ico">⬆️</div><div class="rowmain"><b>App Update</b><small>Check for the latest version</small></div><b>›</b></div>
       <div class="row" onclick="toast('General preferences ready')"><div class="ico">⚙️</div><div class="rowmain"><b>General Preferences</b><small>Application preferences</small></div><b>›</b></div>
     </div></div>
@@ -294,7 +372,7 @@ function about(){app.innerHTML=`<main class="shell"><section class="screen">${he
 function errorState(message='We could not complete your request.'){
 app.innerHTML=`<main class="shell"><section class="screen">${header('Something went wrong','Data Connect')}<div class="state"><div class="stateico">✕</div><h2>Transaction Failed</h2><p class="sub">${esc(message)}</p><button class="primary full" onclick="go('summary')">Try Again</button><button class="ghost full" onclick="go('home')">Back to Home</button></div></section></main>`}
 function connectionError(){app.innerHTML=`<main class="shell"><section class="screen">${header('Connection Problem','Data Connect')}<div class="state"><div class="stateico">⚠</div><h2>Connection Problem</h2><p class="sub">Please check your internet connection and try again.</p><button class="primary full" onclick="location.reload()">Retry</button></div></section></main>`}
-function render(){if(['marketer','staff','dispenser'].includes(state.page)){if(state.page==='marketer'&&!canSeeMarketer())return go('home');if(state.page==='staff'&&!canSeeStaff())return go('home');if(state.page==='dispenser'&&!canSeeDispenser())return go('home')}if(['login','signup'].includes(state.page))return auth();const map={home,dispenser,data,planSelection,recipient,summary,confirm,pending,success,airtime,airtimePending,airtimeSuccess,wallet,transactions,shares,withdraw,marketer,marketerStatus,staff,notifications,support,account,about,backend:backendSettings};(map[state.page]||home)()}
+function render(){if(['marketer','staff','dispenser'].includes(state.page)){if(state.page==='marketer'&&!canSeeMarketer())return go('home');if(state.page==='staff'&&!canSeeStaff())return go('home');if(state.page==='dispenser'&&!canSeeDispenser())return go('home')}if(['login','signup'].includes(state.page))return auth();const map={home,dispenser,data,planSelection,recipient,summary,confirm,transactionPin,pending,success,airtime,airtimePending,airtimeSuccess,wallet,transactions,shares,withdraw,marketer,marketerStatus,staff,notifications,support,account,about,backend:backendSettings};(map[state.page]||home)()}
 showScreenLoader('Starting Data Connect...');
 setTimeout(()=>{render();setTimeout(hideScreenLoader,350)},450);
 

@@ -43,6 +43,7 @@ class MainActivity : FragmentActivity() {
     }
 
     inner class BiometricBridge {
+        @JavascriptInterface fun exitApp() { runOnUiThread { finish() } }
         @JavascriptInterface fun isAvailable(): Boolean = biometric.isAvailable()
         @JavascriptInterface fun isEnabled(): Boolean = biometric.isEnabled()
         @JavascriptInterface fun enable(token: String) { runOnUiThread { biometric.enable(token) { ok -> webView.post { webView.evaluateJavascript("window.onNativeBiometricEnabled(${ok.toString()});", null) } } } }
@@ -50,6 +51,6 @@ class MainActivity : FragmentActivity() {
         @JavascriptInterface fun authenticate() { runOnUiThread { biometric.authenticate { ok, token -> val js = "window.onNativeBiometricResult(${ok.toString()},${if(token==null)"null" else "'"+token.replace("\\","\\\\").replace("'","\\'")+"'"});"; webView.post{webView.evaluateJavascript(js,null)} } } }
     }
     @Deprecated("Deprecated in Java") override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){super.onActivityResult(requestCode,resultCode,data);if(requestCode==fileChooserRequest){val result=if(resultCode==RESULT_OK&&data?.data!=null)arrayOf(data.data!!)else null;filePathCallback?.onReceiveValue(result);filePathCallback=null}}
-    @Deprecated("Deprecated in Java") override fun onBackPressed(){if(webView.canGoBack())webView.goBack()else super.onBackPressed()}
+    @Deprecated("Deprecated in Java") override fun onBackPressed(){ webView.evaluateJavascript("(window.handleNativeBack ? window.handleNativeBack() : false)", null) }
     override fun onDestroy(){filePathCallback?.onReceiveValue(null);filePathCallback=null;webView.stopLoading();webView.destroy();super.onDestroy()}
 }

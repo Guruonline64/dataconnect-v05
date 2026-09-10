@@ -39,6 +39,9 @@ window.DC_API = {
     if(data.data && data.data.token){ this.token=data.data.token; localStorage.setItem("dc_auth_token",this.token); }
     return data;
   },
+
+  async setTransactionPin(pin,confirmPin){return this.request('/api/v2/account/transaction-pin',{method:'POST',body:JSON.stringify({pin,transaction_pin:pin,pin_confirmation:confirmPin,transaction_pin_confirmation:confirmPin})});},
+  async verifyTransactionPin(pin){const r=await this.request('/api/v2/account/transaction-pin/verify',{method:'POST',body:JSON.stringify({pin,transaction_pin:pin})});return r.success!==false;},
   async logoutRemote(){ try { await this.request("/api/v2/auth/logout",{method:"POST"}); } finally { this.logout(); } },
   async me(){ return this.request("/api/v2/account/profile"); },
   async settings(){ return this.request("/api/v2/account/settings"); },
@@ -46,14 +49,14 @@ window.DC_API = {
   async transactions(){ return this.request("/api/v2/wallet/transactions"); },
   async notifications(){ return this.request("/api/v2/notifications"); },
   async dataPlans(){ return this.request("/api/v2/data/plans"); },
-  async purchaseData(data_plan_id,phone_number){ return this.request("/api/v2/data/purchase",{method:"POST",body:JSON.stringify({data_plan_id,phone_number})}); },
-  async airtimeRequest(network,amount,phone_number){ return this.request("/api/v2/airtime/purchase",{method:"POST",body:JSON.stringify({network,amount:Number(amount),phone_number})}); },
+  async purchaseData(network,plan_name,amount,recipient_phone,transaction_pin){return this.request('/api/v2/data/purchase',{method:'POST',body:JSON.stringify({network,plan_name,amount:Number(amount),recipient_phone,transaction_pin})});},
+  async airtimeRequest(network,amount,phone_number,transaction_pin){return this.request('/api/v2/airtime/purchase',{method:'POST',body:JSON.stringify({network,amount:Number(amount),recipient_phone:phone_number,transaction_pin})});},
   async orders(){ return this.request("/api/v2/orders"); },
   async withdrawals(){ return this.request("/api/v2/withdrawals"); },
-  async withdrawalRequest(amount,bank_name,account_number,account_name){ return this.request("/api/v2/withdrawals",{method:"POST",body:JSON.stringify({amount:Number(amount),bank_name,account_number,account_name})}); },
+  async withdrawalRequest(amount,bank_name,account_number,account_name,transaction_pin){return this.request('/api/v2/withdrawals',{method:'POST',body:JSON.stringify({amount:Number(amount),bank_name,account_number,account_name,transaction_pin})});},
   async shares(){ return this.request("/api/v2/shares"); },
   async holdings(){ return this.request("/api/v2/shares/portfolio"); },
-  async buyShare(share_id,units){ return this.request("/api/v2/shares/purchase",{method:"POST",body:JSON.stringify({share_id,units:Number(units)})}); },
+  async buyShare(share_id,units,transaction_pin){return this.request('/api/v2/shares/purchase',{method:'POST',body:JSON.stringify({share_id,units:Number(units),transaction_pin})});},
   logout(){ this.token=""; localStorage.removeItem("dc_auth_token"); localStorage.removeItem("data_connect_token"); }
 };
 
