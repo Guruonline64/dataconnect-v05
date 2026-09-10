@@ -45,6 +45,8 @@ class ApiController extends Controller
             'staff-marketers' => $this->staffMarketers($request),
             'staff-marketer-decision' => $this->staffMarketerDecision($request),
             'post-daily-share-returns' => $this->postDailyReturns($request),
+            'set-transaction-pin' => $this->setTransactionPin($request),
+            'verify-transaction-pin' => $this->verifyTransactionPin($request),
             default => $this->out(false,'Endpoint not found',[],404),
         };
     }
@@ -152,6 +154,7 @@ class ApiController extends Controller
     private function purchaseData(Request $r)
     {
         $u=$this->user($r);
+        $this->requireTransactionPin($r,$u);
         $network=trim((string)$r->input('network','')); $plan=trim((string)$r->input('plan_name',''));
         $phone=trim((string)$r->input('recipient_phone','')); $amount=(float)$r->input('amount',0);
         if ($network===''||$plan===''||$phone===''||$amount<=0)
@@ -225,6 +228,7 @@ class ApiController extends Controller
     private function requestAirtime(Request $r)
     {
         $u=$this->user($r);
+        $this->requireTransactionPin($r,$u);
         $network=trim((string)$r->input('network','')); $phone=trim((string)$r->input('recipient_phone','')); $amount=(float)$r->input('amount',0);
         if ($network===''||$phone===''||$amount<=0) return $this->out(false,'Network, recipient phone and valid amount are required',[],422);
         $id=DB::table('airtime_requests')->insertGetId(['user_id'=>$u->id,'network'=>$network,'amount'=>$amount,'recipient_phone'=>$phone,'status'=>'pending','created_at'=>now()]);
@@ -254,7 +258,7 @@ class ApiController extends Controller
 
     private function buyShare(Request $r)
     {
-        $u=$this->user($r); $pid=(int)$r->input('package_id',0);
+        $u=$this->user($r); $this->requireTransactionPin($r,$u); $pid=(int)$r->input('package_id',0);
         if ($pid<=0) return $this->out(false,'Valid package_id required',[],422);
         try {
             $holding=DB::transaction(function() use($u,$pid) {
@@ -279,7 +283,7 @@ class ApiController extends Controller
 
     private function withdrawalRequest(Request $r)
     {
-        $u=$this->user($r); $amount=(float)$r->input('amount',0);
+        $u=$this->user($r); $this->requireTransactionPin($r,$u); $amount=(float)$r->input('amount',0);
         if (!in_array($amount,[500,1000,2000,5000,10000],true)) return $this->out(false,'Invalid withdrawal amount',[],422);
         try {
             $id=DB::transaction(function() use($u,$amount) {
@@ -416,6 +420,35 @@ class ApiController extends Controller
         $this->svc->notify($uid,'Marketer application '.$status,'Your marketer application has been '.$status.'.');
         $this->svc->audit($staff->id,$status,'marketer',$id);
         return $this->out(true,'Marketer updated',['status'=>$status]);
+    }
+
+
+    private function requireTransactionPin(Request $r, object $u): void
+    {
+        $pin=(string)$r->input('transaction_pin',$r->input('pin',''));
+        if (!preg_match('/^\d{4}$/',$pin)) abort(response()->json(['success'=>false,'message'=>'A 4-digit Transaction PIN is required'],422));
+        $row=DB::table('transaction_pins')->where('user_id',$u->id)->first();
+        if (!$row) abort(response()->json(['success'=>false,'message'=>'Transaction PIN is not set. Set it in Account > Security.'],403));
+        if ($row->locked_until && now()->lessThan($row->locked_until)) abort(response()->json(['success'=>false,'message'=>'Transaction PIN is temporarily locked. Please try again later.'],429));
+        if (!Hash::check($pin,$row->pin_hash)) {
+            $attempts=(int)$row->failed_attempts+1;
+            DB::table('transaction_pins')->where('user_id',$u->id)->update(['failed_attempts'=>$attempts,'locked_until'=>$attempts>=5?now()->addMinutes(15):null,'updated_at'=>now()]);
+            abort(response()->json(['success'=>false,'message'=>$attempts>=5?'Too many incorrect PIN attempts. PIN locked for 15 minutes.':'Incorrect Transaction PIN'],422));
+        }
+        DB::table('transaction_pins')->where('user_id',$u->id)->update(['failed_attempts'=>0,'locked_until'=>null,'updated_at'=>now()]);
+    }
+
+    private function setTransactionPin(Request $r)
+    {
+        $u=$this->user($r); $pin=(string)$r->input('pin',$r->input('transaction_pin','')); $confirm=(string)$r->input('pin_confirmation',$r->input('transaction_pin_confirmation',''));
+        if (!preg_match('/^\d{4}$/',$pin) || $pin!==$confirm) return $this->out(false,'Transaction PIN must be exactly 4 matching digits',422);
+        DB::table('transaction_pins')->updateOrInsert(['user_id'=>$u->id],['pin_hash'=>Hash::make($pin),'failed_attempts'=>0,'locked_until'=>null,'updated_at'=>now(),'created_at'=>now()]);
+        return $this->out(true,'Transaction PIN saved');
+    }
+
+    private function verifyTransactionPin(Request $r)
+    {
+        $u=$this->user($r); $this->requireTransactionPin($r,$u); return $this->out(true,'Transaction PIN verified');
     }
 
     private function postDailyReturns(Request $r)
