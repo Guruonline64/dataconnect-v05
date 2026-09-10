@@ -112,3 +112,101 @@ body.dark .auth .policy,
   color:#aab6c8;
   border-color:#293852;
 }
+
+
+/* V14.3.0 — Transaction PIN UI */
+.transaction-pin-card {
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid var(--input-border, #d9e2ef);
+  border-radius: 14px;
+  background: var(--card-bg, #fff);
+}
+.transaction-pin-card .pin-title {
+  font-weight: 800;
+  font-size: 14px;
+}
+.transaction-pin-card .pin-subtitle {
+  margin-top: 4px;
+  color: var(--muted, #667085);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.transaction-pin-card .pin-status {
+  margin-top: 9px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.transaction-pin-actions {
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+  flex-wrap:wrap;
+}
+.transaction-pin-actions button {
+  border:0;
+  border-radius:10px;
+  padding:10px 13px;
+  font-weight:700;
+  cursor:pointer;
+}
+body.dark .transaction-pin-card,
+.dark .transaction-pin-card {
+  background:#111d30;
+  border-color:#293852;
+  color:#eef4ff;
+}
+body.dark .transaction-pin-card .pin-subtitle,
+.dark .transaction-pin-card .pin-subtitle {
+  color:#aab6c8;
+}
+.pin-input {
+  letter-spacing:.35em;
+  text-align:center;
+  font-weight:800;
+}
+
+
+/* V14.3.2 — Data Center promotional banner */
+.dc-promo-banner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:112px;
+  margin:12px 0 16px;
+  padding:18px 18px;
+  border-radius:18px;
+  background:linear-gradient(135deg,#075bea,#0b7cff);
+  color:#fff;
+  overflow:hidden;
+  position:relative;
+  box-shadow:0 10px 24px rgba(7,91,234,.18);
+}
+.dc-promo-banner:after{
+  content:"";
+  position:absolute;
+  width:150px;
+  height:150px;
+  right:-42px;
+  top:-62px;
+  border-radius:50%;
+  background:rgba(255,255,255,.13);
+}
+.dc-promo-copy{display:flex;flex-direction:column;gap:4px;position:relative;z-index:1}
+.dc-promo-kicker{font-size:10px;font-weight:800;letter-spacing:.12em;opacity:.85}
+.dc-promo-copy strong{font-size:19px;line-height:1.15}
+.dc-promo-copy span:last-child{font-size:11px;opacity:.9;max-width:235px}
+.dc-promo-badge{
+  position:relative;z-index:2;
+  padding:7px 9px;
+  border-radius:10px;
+  background:rgba(255,255,255,.18);
+  font-size:10px;font-weight:900;
+  letter-spacing:.06em;
+}
+body.dark .dc-promo-banner,.dark .dc-promo-banner{
+  background:linear-gradient(135deg,#123f8e,#075bea);
+  box-shadow:none;
+}
+
+.dc-promo-banner{min-height:112px;margin:12px 0 16px;border-radius:18px;overflow:hidden}.dc-promo-slide{display:none;min-height:112px;padding:18px;box-sizing:border-box;background:linear-gradient(135deg,#075bea,#0b7cff);color:#fff}.dc-promo-slide.is-active{display:flex;align-items:center}.dc-promo-copy{display:flex;flex-direction:column;gap:4px}.dc-promo-kicker{font-size:10px;font-weight:900;letter-spacing:.12em}.dc-promo-copy strong{font-size:18px}.dc-promo-copy span{font-size:11px;opacity:.92}.dc-promo-cta{width:max-content;margin-top:7px;padding:7px 11px;border:0;border-radius:9px;background:#fff;color:#075bea;font-weight:800;font-size:11px}body.dark .dc-promo-slide,.dark .dc-promo-slide{background:linear-gradient(135deg,#123f8e,#075bea)}

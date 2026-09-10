@@ -1,4 +1,15 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Data Connect — Admin Control Center</title><link rel="stylesheet" href="style.css"></head><body>
+<section class="transaction-pin-card" aria-label="Transaction PIN">
+  <div class="pin-title">🔐 Transaction PIN</div>
+  <div class="pin-subtitle">Use a separate PIN to authorize purchases, withdrawals and other money-related transactions.</div>
+  <div class="pin-status" id="transactionPinStatus">Status: Not enabled</div>
+  <div class="transaction-pin-actions">
+    <button type="button" data-action="setup-transaction-pin">Set Transaction PIN</button>
+    <button type="button" data-action="change-transaction-pin">Change PIN</button>
+    <button type="button" data-action="disable-transaction-pin">Disable PIN</button>
+  </div>
+</section>
+
 <div id="login" class="login"><div class="login-card"><div class="brand"><div class="logo">DC</div><div><b>Data Connect</b><span>Admin Control Center</span></div></div><h1>Welcome back</h1><p>Sign in with an authorized staff or admin account.</p><form id="loginForm"><label>Phone<input id="phone" required autocomplete="username"></label><label>Password<input id="password" type="password" required autocomplete="current-password"></label><button>Sign in</button><div id="loginMsg"></div></form></div></div>
 <div id="app" class="hidden"><aside><div class="brand side"><div class="logo">DC</div><div><b>Data Connect</b><span>Control Center</span></div></div><nav><button data-page="overview" class="active">Overview</button><button data-page="users">Users</button><button data-page="withdrawals">Withdrawals</button><button data-page="airtime">Airtime</button><button data-page="marketers">Marketers</button><button data-page="plans">Data Plans</button></nav><button id="logout" class="logout">Sign out</button></aside><main><header><div><small>ADMINISTRATION</small><h1 id="title">Overview</h1></div><div class="status"><i></i><span id="adminName">Secure session</span></div></header><section id="content"></section></main></div><script src="app.js"></script><div class="dc-forgot-password"><button type="button" onclick="dcV136ForgotPassword()">Forgot password?</button></div>
 </body></html>

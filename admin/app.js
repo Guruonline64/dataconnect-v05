@@ -29,3 +29,77 @@ const DC_V13_7_ROLES = {
  DISPENSER: "dispenser",
  ADMIN: "admin"
 };
+
+
+/* DataConnect V14.3.0 — Transaction PIN */
+(function () {
+  const KEY = "dataconnect_transaction_pin_enabled";
+  const API = window.DataConnectApi || window.api || null;
+
+  window.DataConnectTransactionPin = {
+    isEnabled() {
+      return localStorage.getItem(KEY) === "true";
+    },
+    setEnabled(value) {
+      localStorage.setItem(KEY, value ? "true" : "false");
+    },
+    async verify(pin) {
+      if (!/^\d{4}$/.test(String(pin || ""))) return false;
+      try {
+        if (API && typeof API.verifyTransactionPin === "function") {
+          return !!(await API.verifyTransactionPin(pin));
+        }
+      } catch (_) {}
+      return false;
+    },
+    async setup(pin, confirmPin) {
+      if (!/^\d{4}$/.test(String(pin || "")) || String(pin) !== String(confirmPin || "")) {
+        return { ok:false, error:"PIN must be exactly 4 digits and both entries must match." };
+      }
+      try {
+        if (API && typeof API.setTransactionPin === "function") {
+          const result = await API.setTransactionPin(pin);
+          if (result && result.ok === false) return result;
+        }
+      } catch (_) {
+        return { ok:false, error:"Unable to save Transaction PIN." };
+      }
+      this.setEnabled(true);
+      return { ok:true };
+    },
+    async change(oldPin, newPin, confirmPin) {
+      if (!(await this.verify(oldPin))) return { ok:false, error:"Current Transaction PIN is incorrect." };
+      return this.setup(newPin, confirmPin);
+    },
+    disable() {
+      this.setEnabled(false);
+    }
+  };
+})();
+
+
+/* DataConnect V14.3.3 - Dynamic Promotions */
+(function(){
+ const fallback=[{id:"welcome",title:"Get more data for less",description:"Fast, affordable data plans for every network.",badge:"HOT",cta:"View Plans",route:"plans",active:true}];
+ const base=window.DATACONNECT_API_BASE||window.API_BASE_URL||"";
+ async function load(){
+  if(!base)return fallback;
+  try{
+   const r=await fetch(base.replace(/\/$/,"")+"/promotions",{headers:{Accept:"application/json"}});
+   if(!r.ok)throw 0;
+   const j=await r.json(), a=Array.isArray(j)?j:(j.data||j.promotions||[]);
+   return a.filter(x=>x.active!==false);
+  }catch(e){return fallback}
+ }
+ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+ function render(a,c){
+  if(!c)return;
+  c.innerHTML=a.map((p,i)=>`<article class="dc-promo-slide ${i?"":"is-active"}" data-route="${esc(p.route||"plans")}"><div class="dc-promo-copy">${p.badge?`<span class="dc-promo-kicker">${esc(p.badge)}</span>`:""}<strong>${esc(p.title||"Data Connect Offer")}</strong><span>${esc(p.description||"")}</span>${p.cta?`<button type="button" class="dc-promo-cta">${esc(p.cta)}</button>`:""}</div></article>`).join("");
+  const s=[...c.querySelectorAll(".dc-promo-slide")];let i=0;
+  const show=n=>{i=(n+s.length)%s.length;s.forEach((x,k)=>x.classList.toggle("is-active",k===i))};
+  c.onclick=e=>{if(e.target.closest(".dc-promo-cta")){const r=e.target.closest(".dc-promo-slide").dataset.route;if(typeof window.go==="function")window.go(r);else if(typeof window.navigateTo==="function")window.navigateTo(r)}};
+  if(s.length>1)c._promoTimer=setInterval(()=>show(i+1),5000);
+ }
+ window.DataConnectPromotions={load,render};
+ document.addEventListener("DOMContentLoaded",async()=>{const c=document.querySelector("[data-dataconnect-promotions]");if(c)render(await load(),c)});
+})();
